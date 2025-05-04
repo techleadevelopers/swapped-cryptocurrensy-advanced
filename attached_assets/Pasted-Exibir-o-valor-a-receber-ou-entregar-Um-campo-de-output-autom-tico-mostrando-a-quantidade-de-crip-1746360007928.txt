@@ -1,0 +1,13 @@
+Exibir o valor a receber (ou entregar): Um campo de output automático mostrando a quantidade de criptomoeda correspondente, atualizado em tempo real com base na taxa de câmbio. Exibir o símbolo e nome da criptomoeda.
+Selecionar a criptomoeda: Um dropdown ou lista visual de criptomoedas (ex: BTC, ETH, LTC). Exibir o símbolo e nome da criptomoeda.
+Escolher o método de pagamento: Exibir ícones dos métodos de pagamento disponíveis (ex: PIX, Visa, Apple Pay, Boleto, etc.) com as respectivas taxas de serviço claramente visíveis abaixo de cada opção. A seleção de um método pode influenciar no tempo de processamento ou em informações adicionais a serem exibidas dentro do card.
+Botão de "Continuar" (ou similar): Um botão primário para iniciar o processo de transação. Ao clicar, as ações subsequentes (descritas abaixo) devem ocorrer dinamicamente dentro do mesmo card.
+Indicação de carregamento/processamento: Um feedback visual claro (spinner, barra de progresso) durante a busca de taxas, processamento da transação e confirmação.
+Mensagens de sucesso e erro: Exibir mensagens claras e concisas dentro do card para informar o usuário sobre o status da transação (sucesso, falha, erro de entrada, etc.).
+Automação e Praticidade (Tudo no Card): Garantir que todo o fluxo da transação ocorra dentro deste único card, sem redirecionamentos de página. Isso inclui:
+
+Cálculo automático da quantidade de criptomoeda: Atualizar o valor a receber/entregar em tempo real conforme o usuário digita o valor na moeda fiduciária.
+Busca automática das melhores taxas: Integrar com APIs de exchanges ou provedores de liquidez para obter as melhores taxas de câmbio disponíveis no momento da interação do usuário. Exibir essa taxa de forma clara no card.
+Processamento da transação: Após o clique em "Continuar", simular ou integrar com um backend que processaria a compra/venda (a lógica de backend específica não precisa ser totalmente implementada pelo GPT, mas a estrutura da requisição e resposta deve ser considerada).
+Exibição do status da transação: Após o processamento (simulado ou real), exibir o status da transação (pendente, concluída, falha) dentro do card.
+Possível exibição de um resumo da transação: Após a conclusão, mostrar um resumo dos detalhes da compra/venda (valor pago, criptomoeda recebida/entregue, taxa aplicada, método de pagamento).
