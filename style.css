@@ -3,6 +3,7 @@
   --primary-color: #7B4BFF;
   --secondary-color: #00E8FF;
   --background-color: #fff;
+  --background-color-with-opacity: rgba(255, 87, 51, 0.5); /* Cor com opacidade */
   --text-color: #1a1a1a;
   --border-color: #e0e0e0;
   --hover-color: #f5f5f5;
@@ -34,11 +35,11 @@ body::before {
     linear-gradient(217deg, rgba(123, 75, 255, 0.1), transparent 70%),
     linear-gradient(127deg, rgba(0, 232, 255, 0.15), transparent 70%),
     linear-gradient(336deg, rgba(255, 123, 234, 0.1), transparent 70%),
-    radial-gradient(circle at 50% 50%, rgba(41, 196, 255, 0.2) 0%, transparent 80%);
+    radial-gradient(circle at 50% 50%, rgba(41, 196, 255, 0.9) 0%, transparent 80%);
   filter: blur(80px);
   pointer-events: none;
   z-index: -1;
-  animation: backgroundPulse 15s ease infinite;
+  animation: backgroundPulse 10s ease infinite;
 }
 
 @keyframes backgroundPulse {
@@ -49,7 +50,7 @@ body::before {
 
 @keyframes glowPulse {
   0% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(0, 232, 255, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(77, 75, 212, 0.4); }
   100% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
 }
 
@@ -134,8 +135,8 @@ body::before {
   width: 100%;
   height: 100%;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
   background-size: 50px 50px;
   opacity: 0.2;
   z-index: -1;
@@ -279,30 +280,34 @@ body::before {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 30px;
+  margin-top:  60px;
 }
 
 .content-left {
-  padding: 40px;
+  padding: 30px;
 }
 
 .stats-container {
   display: flex;
-  gap: 20px;
+  gap: 30px;
+  width: 70%;
   margin-top: 30px;
 }
 
 .stat-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
-  padding: 20px;
+  padding: 18px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   flex: 1;
+  margin-top: 50px;
+  
 }
 
 .stat-card h3 {
   color: var(--secondary-color);
-  font-size: 14px;
+  font-size: 13px;
   margin-bottom: 8px;
 }
 
@@ -348,6 +353,8 @@ body::before {
 
 
 .swap-card {
+  position: relative;
+  right: 50px;
   background: var(--background-color);
   border-radius: 24px;
   padding: 24px;
