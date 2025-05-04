@@ -382,8 +382,22 @@ body::before {
   color: white;
 }
 
-.currency-input {
+.currency-input,
+.wallet-input {
   margin-bottom: 24px;
+}
+
+.wallet-input input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.wallet-input input:focus {
+  border-color: var(--primary-color);
+  outline: none;
 }
 
 .currency-input label {

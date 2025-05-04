@@ -8,7 +8,48 @@ const state = {
   exchangeRate: 250000,
   currentStep: 1,
   walletAddress: '',
-  connected: false
+  connected: false,
+  transactionFee: 0.015,
+  walletBalance: {
+    BTC: 0,
+    ETH: 0,
+    BRL: 100000
+  }
+};
+
+const validateWalletAddress = (address) => {
+  return address.length === 42 && address.startsWith('0x');
+};
+
+const calculateFees = (amount) => {
+  return amount * state.transactionFee;
+};
+
+const executeTransaction = async () => {
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  const fee = calculateFees(amount);
+  const total = state.action === 'buy' ? amount + fee : amount - fee;
+  
+  if (state.action === 'buy') {
+    if (state.walletBalance[state.payCurrency] < total) {
+      throw new Error('Insufficient balance');
+    }
+    state.walletBalance[state.payCurrency] -= total;
+    state.walletBalance[state.receiveCurrency] += amount / state.exchangeRate;
+  } else {
+    if (state.walletBalance[state.receiveCurrency] < amount) {
+      throw new Error('Insufficient crypto balance');
+    }
+    state.walletBalance[state.receiveCurrency] -= amount;
+    state.walletBalance[state.payCurrency] += total;
+  }
+  
+  return {
+    txHash: '0x' + Math.random().toString(16).slice(2),
+    amount,
+    fee,
+    total
+  };
 };
 
 const steps = {
@@ -30,23 +71,21 @@ const processTransaction = async () => {
   const spinner = document.querySelector('.loading-spinner');
   spinner.classList.remove('hidden');
   
-  // Simulate transaction flow
   try {
-    // Step 1: Validate amount
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Step 1: Validate amount and wallet
+    if (!state.walletAddress || !validateWalletAddress(state.walletAddress)) {
+      throw new Error('Invalid wallet address');
+    }
+
+    const amount = parseFloat(document.getElementById('payAmount').value);
+    if (isNaN(amount) || amount <= 0) {
+      throw new Error('Invalid amount');
+    }
+
+    // Step 2: Execute transaction
+    const transaction = await executeTransaction();
     
-    // Step 2: Check wallet balance
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Step 3: Calculate fees
-    const fee = (state.payAmount * 0.01).toFixed(2);
-    
-    // Step 4: Process payment
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Step 5: Complete transaction
-    const txHash = '0x' + Math.random().toString(16).slice(2);
-    
+    // Step 3: Update UI
     spinner.classList.add('hidden');
     
     // Show success notification
