@@ -144,8 +144,47 @@ const processTransaction = async () => {
       throw new Error('Invalid amount');
     }
 
-    // Step 2: Execute transaction
-    const transaction = await executeTransaction();
+    if (!state.selectedPaymentMethod) {
+      throw new Error('Payment method not selected');
+    }
+
+    // Generate payment ID and details
+    const paymentId = 'PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const paymentDetails = {
+      id: paymentId,
+      amount: amount,
+      currency: state.payCurrency,
+      method: state.selectedPaymentMethod.dataset.method,
+      status: 'pending',
+      timestamp: Date.now()
+    };
+
+    // Initialize payment based on method
+    switch(paymentDetails.method) {
+      case 'pix':
+        // Generate PIX code
+        paymentDetails.pixCode = await generatePixCode(paymentDetails);
+        showPixPaymentModal(paymentDetails);
+        break;
+      case 'card':
+        // Show card payment form
+        showCardPaymentModal(paymentDetails);
+        break;
+      default:
+        throw new Error('Unsupported payment method');
+    }
+
+    // Start payment verification loop
+    let verificationAttempts = 0;
+    const verifyPayment = async () => {
+      if (verificationAttempts >= 60) { // 5 minutes timeout
+        throw new Error('Payment verification timeout');
+      }
+
+      const paymentStatus = await checkPaymentStatus(paymentId);
+      if (paymentStatus === 'completed') {
+        // Execute crypto transfer
+        const transaction = await executeTransaction();
     
     // Step 3: Update UI
     spinner.classList.add('hidden');
@@ -154,6 +193,28 @@ const processTransaction = async () => {
     const notification = document.createElement('div');
     notification.className = 'transaction-notification success';
     notification.innerHTML = `
+      <div class="notification-content">
+        <span class="check-icon">✓</span>
+        <div>
+          <h4>Payment Confirmed & Crypto Transferred!</h4>
+          <p>Transaction Hash: ${transaction.txHash}</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+    
+    return transaction;
+      } else if (paymentStatus === 'failed') {
+        throw new Error('Payment failed');
+      } else {
+        verificationAttempts++;
+        setTimeout(verifyPayment, 5000); // Check every 5 seconds
+      }
+    };
+
+    // Start verification process
+    await verifyPayment();
       <div class="notification-content">
         <span class="check-icon">✓</span>
         <div>
@@ -270,3 +331,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+// Payment processing helper functions
+const generatePixCode = async (paymentDetails) => {
+  // In production, integrate with PIX API
+  return `PIX${paymentDetails.id}${Math.random().toString(36).substr(2, 9)}`;
+};
+
+const showPixPaymentModal = (paymentDetails) => {
+  const modal = document.createElement('div');
+  modal.className = 'payment-modal';
+  modal.innerHTML = `
+    <div class="payment-modal-content">
+      <h3>PIX Payment</h3>
+      <div class="qr-code-placeholder">
+        ${paymentDetails.pixCode}
+      </div>
+      <p>Scan the QR code or copy the PIX code above</p>
+      <p>Amount: ${paymentDetails.amount} ${paymentDetails.currency}</p>
+      <p>Payment ID: ${paymentDetails.id}</p>
+      <div class="payment-status">Waiting for payment...</div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+};
+
+const showCardPaymentModal = (paymentDetails) => {
+  const modal = document.createElement('div');
+  modal.className = 'payment-modal';
+  modal.innerHTML = `
+    <div class="payment-modal-content">
+      <h3>Card Payment</h3>
+      <form id="cardPaymentForm">
+        <input type="text" placeholder="Card Number" required>
+        <input type="text" placeholder="MM/YY" required>
+        <input type="text" placeholder="CVC" required>
+        <button type="submit">Pay ${paymentDetails.amount} ${paymentDetails.currency}</button>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+};
+
+const checkPaymentStatus = async (paymentId) => {
+  // In production, integrate with payment processor API
+  // This is a mock implementation
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(Math.random() > 0.2 ? 'completed' : 'pending');
+    }, 2000);
+  });
+};
