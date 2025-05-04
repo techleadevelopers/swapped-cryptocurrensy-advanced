@@ -8,6 +8,7 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.5",
     "vite": "^6.2.2"
   }
 }

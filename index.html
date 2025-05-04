@@ -1,12 +1,90 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>Crypto Swap Platform</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="swap-card">
+        <div class="card-header">
+          <div class="toggle-container">
+            <button class="toggle-btn active" data-action="buy">Buy</button>
+            <button class="toggle-btn" data-action="sell">Sell</button>
+          </div>
+        </div>
+        
+        <div class="input-section">
+          <div class="currency-input">
+            <label>Pay</label>
+            <div class="input-group">
+              <input type="number" id="payAmount" placeholder="0.00" />
+              <button class="currency-selector" id="payCurrency">
+                <img src="https://cryptoicons.org/api/icon/brl/200" alt="BRL" />
+                <span>BRL</span>
+                <svg class="arrow-icon" viewBox="0 0 24 24">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="exchange-rate">
+            <span>1 BTC ≈ 250,000 BRL</span>
+            <div class="loading-spinner hidden"></div>
+          </div>
+
+          <div class="currency-input">
+            <label>Receive</label>
+            <div class="input-group">
+              <input type="number" id="receiveAmount" placeholder="0.00" readonly />
+              <button class="currency-selector" id="receiveCurrency">
+                <img src="https://cryptoicons.org/api/icon/btc/200" alt="BTC" />
+                <span>BTC</span>
+                <svg class="arrow-icon" viewBox="0 0 24 24">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="payment-methods">
+          <h3>Choose payment method</h3>
+          <div class="methods-grid">
+            <button class="payment-method">
+              <img src="https://cryptoicons.org/api/icon/pix/200" alt="PIX" />
+              <span>PIX</span>
+              <span class="fee">Fee: 1.7%</span>
+            </button>
+            <button class="payment-method">
+              <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/icon/visa.png" alt="VISA" />
+              <span>VISA</span>
+              <span class="fee">Fee: 1.5%</span>
+            </button>
+            <button class="payment-method">
+              <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/icon/mastercard.png" alt="Mastercard" />
+              <span>Mastercard</span>
+              <span class="fee">Fee: 1.7%</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="continue-btn" id="continueBtn">
+          Continue
+          <svg viewBox="0 0 24 24">
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+          </svg>
+        </button>
+
+        <div class="terms">
+          By buying, you agree to our <a href="#">terms of service</a>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/main.js"></script>
   </body>
 </html>
