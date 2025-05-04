@@ -257,6 +257,7 @@ body::before {
   padding: 40px;
   max-width: 1600px;
   margin: 0 auto;
+  align-items: start;
 }
 
 .content-left {
@@ -344,11 +345,7 @@ body::before {
   margin: 8px 0;
 }
 
-#app {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-}
+
 
 .swap-card {
   background: var(--background-color);
