@@ -252,8 +252,8 @@ body::before {
 
 #app {
   display: grid;
-  grid-template-columns: 1fr 450px;
-  gap: 60px;
+  grid-template-columns: 1fr 400px;
+  gap: 40px;
   padding: 40px;
   max-width: 1600px;
   margin: 0 auto;
