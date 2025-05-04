@@ -42,9 +42,89 @@ body::before {
 }
 
 @keyframes backgroundPulse {
-  0% { opacity: 0.5; }
-  50% { opacity: 1; }
-  100% { opacity: 0.5; }
+  0% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(0, 232, 255, 0.4); }
+  100% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.transaction-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease;
+  z-index: 1000;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.check-icon {
+  background: var(--primary-color);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swap-card {
+  animation: glowPulse 3s infinite;
+  transition: transform 0.3s ease;
+}
+
+.swap-card:hover {
+  transform: translateY(-5px);
+}
+
+.currency-selector {
+  animation: glowPulse 2s infinite;
+}
+
+.continue-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.continue-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: buttonGlow 2s infinite;
+}
+
+@keyframes buttonGlow {
+  0% { transform: rotate(45deg) translateX(-100%); }
+  100% { transform: rotate(45deg) translateX(100%); }
 }
 
 .background-grid {

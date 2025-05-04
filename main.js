@@ -29,9 +29,46 @@ const connectWallet = async () => {
 const processTransaction = async () => {
   const spinner = document.querySelector('.loading-spinner');
   spinner.classList.remove('hidden');
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  spinner.classList.add('hidden');
-  return { success: true, txHash: '0x' + Math.random().toString(16).slice(2) };
+  
+  // Simulate transaction flow
+  try {
+    // Step 1: Validate amount
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Step 2: Check wallet balance
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Step 3: Calculate fees
+    const fee = (state.payAmount * 0.01).toFixed(2);
+    
+    // Step 4: Process payment
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Step 5: Complete transaction
+    const txHash = '0x' + Math.random().toString(16).slice(2);
+    
+    spinner.classList.add('hidden');
+    
+    // Show success notification
+    const notification = document.createElement('div');
+    notification.className = 'transaction-notification success';
+    notification.innerHTML = `
+      <div class="notification-content">
+        <span class="check-icon">✓</span>
+        <div>
+          <h4>Transaction Successful!</h4>
+          <p>Hash: ${txHash}</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+    
+    return { success: true, txHash, fee };
+  } catch (error) {
+    spinner.classList.add('hidden');
+    throw error;
+  }
 };
 
 // Mock API call to get exchange rate
