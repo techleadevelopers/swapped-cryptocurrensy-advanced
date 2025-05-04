@@ -25,10 +25,25 @@ const calculateFees = (amount) => {
   return amount * state.transactionFee;
 };
 
+const LIQUIDITY_POOLS = {
+  BTC: { reserve: 100, price: 250000 },
+  ETH: { reserve: 1000, price: 15000 }
+};
+
 const executeTransaction = async () => {
   const amount = parseFloat(document.getElementById('payAmount').value);
   const fee = calculateFees(amount);
   const total = state.action === 'buy' ? amount + fee : amount - fee;
+  
+  // Check liquidity pool
+  const pool = LIQUIDITY_POOLS[state.receiveCurrency];
+  if (!pool || pool.reserve < (amount / pool.price)) {
+    throw new Error('Insufficient liquidity');
+  }
+
+  // Calculate slippage
+  const slippage = amount > 10000 ? 0.01 : 0.005;
+  const finalPrice = pool.price * (1 + slippage);
   
   if (state.action === 'buy') {
     if (state.walletBalance[state.payCurrency] < total) {
@@ -44,12 +59,59 @@ const executeTransaction = async () => {
     state.walletBalance[state.payCurrency] += total;
   }
   
-  return {
-    txHash: '0x' + Math.random().toString(16).slice(2),
-    amount,
-    fee,
-    total
-  };
+  // Process transaction through liquidity pool
+  if (state.action === 'buy') {
+    // Update pool reserves
+    pool.reserve -= (amount / finalPrice);
+    
+    // Generate transaction receipt
+    const receipt = {
+      txHash: '0x' + Math.random().toString(16).slice(2),
+      amount,
+      fee,
+      total,
+      price: finalPrice,
+      timestamp: Date.now(),
+      status: 'completed'
+    };
+
+    // Store transaction in history
+    if (!state.transactionHistory) {
+      state.transactionHistory = [];
+    }
+    state.transactionHistory.push(receipt);
+
+    return receipt;
+  } else {
+    // Handle sell logic
+    pool.reserve += (amount / finalPrice);
+    return {
+      txHash: '0x' + Math.random().toString(16).slice(2),
+      amount,
+      fee,
+      total,
+      price: finalPrice,
+      timestamp: Date.now(),
+      status: 'completed'
+    };
+  }
+};
+
+const getWalletBalance = async (address) => {
+  if (!validateWalletAddress(address)) {
+    throw new Error('Invalid wallet address');
+  }
+  return state.walletBalance;
+};
+
+const updateLiquidityPool = async (currency, amount, action) => {
+  const pool = LIQUIDITY_POOLS[currency];
+  if (action === 'add') {
+    pool.reserve += amount;
+  } else {
+    pool.reserve -= amount;
+  }
+  return pool;
 };
 
 const steps = {

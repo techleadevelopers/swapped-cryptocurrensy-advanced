@@ -530,6 +530,37 @@ body::before {
   text-decoration: none;
 }
 
+.transaction-history {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.transaction-history h3 {
+  margin-bottom: 16px;
+  color: var(--text-color);
+}
+
+.transaction-list {
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--hover-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9em;
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
 .loading-spinner {
   width: 20px;
   height: 20px;
