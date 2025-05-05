@@ -10,104 +10,16 @@ const state = {
   connected: false,
   transactionFee: 0.015,
   walletBalance: {
-      BTC: 0,
-      ETH: 0,
-      BRL: 100000
+    BTC: 0,
+    ETH: 0,
+    BRL: 100000
   },
   transactionHistory: []
-};
-
-const validateWalletAddress = (address) => {
-  return address.length === 42 && address.startsWith('0x');
-};
-
-const calculateFees = (amount) => {
-  return amount * state.transactionFee;
 };
 
 const LIQUIDITY_POOLS = {
   BTC: { reserve: 100, price: 250000 },
   ETH: { reserve: 1000, price: 15000 }
-};
-
-const executeTransaction = async () => {
-  const amount = parseFloat(document.getElementById('payAmount').value);
-  const fee = calculateFees(amount);
-  const total = state.action === 'buy' ? amount + fee : amount - fee;
-
-  // Check liquidity pool
-  const pool = LIQUIDITY_POOLS[state.receiveCurrency];
-  if (!pool || pool.reserve < (amount / pool.price)) {
-      throw new Error('Insufficient liquidity');
-  }
-
-  // Calculate slippage
-  const slippage = amount > 10000 ? 0.01 : 0.005;
-  const finalPrice = pool.price * (1 + slippage);
-
-  if (state.action === 'buy') {
-      if (state.walletBalance[state.payCurrency] < total) {
-          throw new Error('Insufficient balance');
-      }
-      state.walletBalance[state.payCurrency] -= total;
-      state.walletBalance[state.receiveCurrency] += amount / state.exchangeRate;
-  } else {
-      if (state.walletBalance[state.receiveCurrency] < amount) {
-          throw new Error('Insufficient crypto balance');
-      }
-      state.walletBalance[state.receiveCurrency] -= amount;
-      state.walletBalance[state.payCurrency] += total;
-  }
-
-  // Process transaction through liquidity pool
-  if (state.action === 'buy') {
-      // Update pool reserves
-      pool.reserve -= (amount / finalPrice);
-
-      // Generate transaction receipt
-      const receipt = {
-          txHash: '0x' + Math.random().toString(16).slice(2),
-          amount,
-          fee,
-          total,
-          price: finalPrice,
-          timestamp: Date.now(),
-          status: 'completed'
-      };
-
-      // Store transaction in history
-      state.transactionHistory.push(receipt);
-      return receipt;
-  } else {
-      // Handle sell logic
-      pool.reserve += (amount / finalPrice);
-      return {
-          txHash: '0x' + Math.random().toString(16).slice(2),
-          amount,
-          fee,
-          total,
-          price: finalPrice,
-          timestamp: Date.now(),
-          status: 'completed'
-      };
-  }
-};
-
-const getWalletBalance = async (address) => {
-  if (!validateWalletAddress(address)) {
-      throw new Error('Invalid wallet address');
-  }
-  return state.walletBalance;
-};
-
-const updateLiquidityPool = async (currency, amount, action) => {
-  const pool = LIQUIDITY_POOLS[currency];
-  if (action === 'add') {
-      pool.reserve += amount;
-  } else {
-      pool.reserve -= amount;
-  }
-  return pool;
 };
 
 const steps = {
@@ -117,212 +29,69 @@ const steps = {
   4: 'Confirm'
 };
 
-// Mock wallet connection
+const validateWalletAddress = (address) => {
+  return address.length === 42 && address.startsWith('0x');
+};
+
+const calculateFees = (amount) => amount * state.transactionFee;
+
 const connectWallet = async () => {
   state.connected = true;
   state.walletAddress = '0x' + Math.random().toString(16).slice(2, 12);
   return state.walletAddress;
 };
 
-// Mock transaction processing
-const processTransaction = async () => {
-  const spinner = document.querySelector('.loading-spinner');
-  spinner.classList.remove('hidden');
-
-  try {
-      // Step 1: Validate amount and wallet
-      if (!state.walletAddress || !validateWalletAddress(state.walletAddress)) {
-          throw new Error('Invalid wallet address');
-      }
-
-      const amount = parseFloat(document.getElementById('payAmount').value);
-      if (isNaN(amount) || amount <= 0) {
-          throw new Error('Invalid amount');
-      }
-
-      if (!state.selectedPaymentMethod) {
-          throw new Error('Payment method not selected');
-      }
-
-      // Generate payment ID and details
-      const paymentId = 'PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      const paymentDetails = {
-          id: paymentId,
-          amount: amount,
-          currency: state.payCurrency,
-          method: state.selectedPaymentMethod.dataset.method,
-          status: 'pending',
-          timestamp: Date.now()
-      };
-
-      // Initialize payment based on method
-      await handlePaymentMethod(paymentDetails);
-
-      // Start payment verification loop
-      await verifyPayment(paymentId);
-  } catch (error) {
-      console.error(error);
-      alert(error.message); // Display error to the user
-  } finally {
-      spinner.classList.add('hidden');
-  }
-};
-
-const handlePaymentMethod = async (paymentDetails) => {
-  switch(paymentDetails.method) {
-      case 'pix':
-          paymentDetails.pixCode = await generatePixCode(paymentDetails);
-          showPixPaymentModal(paymentDetails);
-          break;
-      case 'card':
-          showCardPaymentModal(paymentDetails);
-          break;
-      default:
-          throw new Error('Unsupported payment method');
-  }
-};
-
-const verifyPayment = async (paymentId) => {
-  let verificationAttempts = 0;
-
-  const verifyPaymentLoop = async () => {
-      if (verificationAttempts >= 60) {
-          throw new Error('Payment verification timeout');
-      }
-
-      const paymentStatus = await checkPaymentStatus(paymentId);
-      if (paymentStatus === 'completed') {
-          const transaction = await executeTransaction();
-          showSuccessNotification(transaction);
-      } else if (paymentStatus === 'failed') {
-          throw new Error('Payment failed');
-      } else {
-          verificationAttempts++;
-          setTimeout(verifyPaymentLoop, 5000); // Check every 5 seconds
-      }
-  };
-
-  await verifyPaymentLoop();
-};
-
-const showSuccessNotification = (transaction) => {
-  const notification = document.createElement('div');
-  notification.className = 'transaction-notification success';
-  notification.innerHTML = `
-      <div class="notification-content">
-          <span class="check-icon">✓</span>
-          <div>
-              <h4>Payment Confirmed & Crypto Transferred!</h4>
-              <p>Transaction Hash: ${transaction.txHash}</p>
-          </div>
-      </div>
-  `;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 5000);
-};
-
-// Mock API call to get exchange rate
-const getExchangeRate = async (from, to) => {
-  const spinner = document.querySelector('.loading-spinner');
-  spinner.classList.remove('hidden');
-
-  // Simulate API delay
+const getExchangeRate = async () => {
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  spinner.classList.add('hidden');
   return state.exchangeRate;
 };
 
-// Update receive amount based on pay amount
-const updateReceiveAmount = async () => {
-  const payAmount = document.getElementById('payAmount').value;
-  const receiveAmount = document.getElementById('receiveAmount');
-  
-  if (!payAmount || isNaN(payAmount)) {
-      receiveAmount.value = '';
-      return;
+const executeTransaction = async () => {
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  const fee = calculateFees(amount);
+  const total = state.action === 'buy' ? amount + fee : amount - fee;
+  const pool = LIQUIDITY_POOLS[state.receiveCurrency];
+
+  if (!pool || pool.reserve < (amount / pool.price)) {
+    throw new Error('Insufficient liquidity');
   }
 
-  const rate = await getExchangeRate(state.payCurrency, state.receiveCurrency);
-  receiveAmount.value = (parseFloat(payAmount) / rate).toFixed(8);
-};
+  const slippage = amount > 10000 ? 0.01 : 0.005;
+  const finalPrice = pool.price * (1 + slippage);
 
-// Initialize event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  // Toggle buy/sell buttons
-  const toggleBtns = document.querySelectorAll('.toggle-btn');
-  toggleBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-          toggleBtns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.action = btn.dataset.action;
-      });
-  });
+  if (state.action === 'buy') {
+    if (state.walletBalance[state.payCurrency] < total) {
+      throw new Error('Insufficient balance');
+    }
 
-  // Pay amount input handler
-  const payAmount = document.getElementById('payAmount');
-  payAmount.addEventListener('input', updateReceiveAmount);
+    state.walletBalance[state.payCurrency] -= total;
+    state.walletBalance[state.receiveCurrency] += amount / finalPrice;
+    pool.reserve -= amount / finalPrice;
+  } else {
+    if (state.walletBalance[state.receiveCurrency] < amount) {
+      throw new Error('Insufficient crypto balance');
+    }
 
-  // Payment method selection
-  const paymentMethods = document.querySelectorAll('.payment-method');
-  paymentMethods.forEach(method => {
-      method.addEventListener('click', () => {
-          paymentMethods.forEach(m => m.style.borderColor = '');
-          method.style.borderColor = 'var(--primary-color)';
-          state.selectedPaymentMethod = method;
-      });
-  });
+    state.walletBalance[state.receiveCurrency] -= amount;
+    state.walletBalance[state.payCurrency] += total;
+    pool.reserve += amount / finalPrice;
+  }
 
-  // Steps navigation
-  const updateStep = (step) => {
-      state.currentStep = step;
-      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-      document.querySelector(`.step-${step}`).classList.remove('hidden');
-      document.querySelector('.steps-indicator').innerHTML = `Step ${step} of 4: ${steps[step]}`;
+  const receipt = {
+    txHash: '0x' + Math.random().toString(16).slice(2),
+    amount,
+    fee,
+    total,
+    price: finalPrice,
+    timestamp: Date.now(),
+    status: 'completed'
   };
 
-  // Continue button handler
-  const continueBtn = document.getElementById('continueBtn');
-  continueBtn.addEventListener('click', async () => {
-      switch(state.currentStep) {
-          case 1:
-              if (!payAmount.value || isNaN(payAmount.value)) {
-                  alert('Please enter a valid amount');
-                  return;
-              }
-              updateStep(2);
-              break;
-          case 2:
-              if (!state.connected) {
-                  const address = await connectWallet();
-                  document.getElementById('walletAddress').textContent = address;
-              }
-              updateStep(3);
-              break;
-          case 3:
-              if (!state.selectedPaymentMethod) {
-                  alert('Please select a payment method');
-                  return;
-              }
-              updateStep(4);
-              break;
-          case 4:
-              const result = await processTransaction();
-              if (result.success) {
-                  alert(`Transaction successful! Hash: ${result.txHash}`);
-                  updateStep(1);
-                  state.selectedPaymentMethod = null;
-                  payAmount.value = '';
-                  document.getElementById('receiveAmount').value = '';
-              }
-              break;
-      }
-  });
-});
+  state.transactionHistory.push(receipt);
+  return receipt;
+};
 
-// Payment processing helper functions
 const generatePixCode = async (paymentDetails) => {
-  // In production, integrate with PIX API
   return `PIX${paymentDetails.id}${Math.random().toString(36).substr(2, 9)}`;
 };
 
@@ -330,16 +99,14 @@ const showPixPaymentModal = (paymentDetails) => {
   const modal = document.createElement('div');
   modal.className = 'payment-modal';
   modal.innerHTML = `
-      <div class="payment-modal-content">
-          <h3>PIX Payment</h3>
-          <div class="qr-code-placeholder">
-              ${paymentDetails.pixCode}
-          </div>
-          <p>Scan the QR code or copy the PIX code above</p>
-          <p>Amount: ${paymentDetails.amount} ${paymentDetails.currency}</p>
-          <p>Payment ID: ${paymentDetails.id}</p>
-          <div class="payment-status">Waiting for payment...</div>
-      </div>
+    <div class="payment-modal-content">
+      <h3>PIX Payment</h3>
+      <div class="qr-code-placeholder">${paymentDetails.pixCode}</div>
+      <p>Scan or copy the PIX code</p>
+      <p>Amount: ${paymentDetails.amount} ${paymentDetails.currency}</p>
+      <p>ID: ${paymentDetails.id}</p>
+      <div class="payment-status">Waiting for payment...</div>
+    </div>
   `;
   document.body.appendChild(modal);
 };
@@ -348,25 +115,177 @@ const showCardPaymentModal = (paymentDetails) => {
   const modal = document.createElement('div');
   modal.className = 'payment-modal';
   modal.innerHTML = `
-      <div class="payment-modal-content">
-          <h3>Card Payment</h3>
-          <form id="cardPaymentForm">
-              <input type="text" placeholder="Card Number" required>
-              <input type="text" placeholder="MM/YY" required>
-              <input type="text" placeholder="CVC" required>
-              <button type="submit">Pay ${paymentDetails.amount} ${paymentDetails.currency}</button>
-          </form>
-      </div>
+    <div class="payment-modal-content">
+      <h3>Card Payment</h3>
+      <form id="cardPaymentForm">
+        <input type="text" placeholder="Card Number" required>
+        <input type="text" placeholder="MM/YY" required>
+        <input type="text" placeholder="CVC" required>
+        <button type="submit">Pay ${paymentDetails.amount} ${paymentDetails.currency}</button>
+      </form>
+    </div>
   `;
   document.body.appendChild(modal);
 };
 
+const handlePaymentMethod = async (paymentDetails) => {
+  switch (paymentDetails.method) {
+    case 'pix':
+      paymentDetails.pixCode = await generatePixCode(paymentDetails);
+      showPixPaymentModal(paymentDetails);
+      break;
+    case 'card':
+      showCardPaymentModal(paymentDetails);
+      break;
+    default:
+      throw new Error('Unsupported payment method');
+  }
+};
+
 const checkPaymentStatus = async (paymentId) => {
-  // In production, integrate with payment processor API
-  // This is a mock implementation
   return new Promise((resolve) => {
-      setTimeout(() => {
-          resolve(Math.random() > 0.2 ? 'completed' : 'pending');
-      }, 2000);
+    setTimeout(() => {
+      resolve(Math.random() > 0.2 ? 'completed' : 'pending');
+    }, 2000);
   });
 };
+
+const verifyPayment = async (paymentId) => {
+  let attempts = 0;
+  const verifyLoop = async () => {
+    if (attempts >= 60) throw new Error('Timeout');
+    const status = await checkPaymentStatus(paymentId);
+    if (status === 'completed') {
+      const tx = await executeTransaction();
+      showSuccessNotification(tx);
+    } else if (status === 'failed') {
+      throw new Error('Payment failed');
+    } else {
+      attempts++;
+      setTimeout(verifyLoop, 5000);
+    }
+  };
+  await verifyLoop();
+};
+
+const showSuccessNotification = (tx) => {
+  const div = document.createElement('div');
+  div.className = 'transaction-notification success';
+  div.innerHTML = `
+    <div class="notification-content">
+      <span class="check-icon">✓</span>
+      <div>
+        <h4>Payment Confirmed & Crypto Sent!</h4>
+        <p>Hash: ${tx.txHash}</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 5000);
+};
+
+const processTransaction = async () => {
+  document.querySelector('.loading-spinner').classList.remove('hidden');
+  try {
+    if (!state.walletAddress || !validateWalletAddress(state.walletAddress)) {
+      throw new Error('Invalid wallet address');
+    }
+
+    const amount = parseFloat(document.getElementById('payAmount').value);
+    if (isNaN(amount) || amount <= 0) throw new Error('Invalid amount');
+
+    if (!state.selectedPaymentMethod) throw new Error('Select payment method');
+
+    const paymentId = 'PAY-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const paymentDetails = {
+      id: paymentId,
+      amount,
+      currency: state.payCurrency,
+      method: state.selectedPaymentMethod.dataset.method,
+      status: 'pending',
+      timestamp: Date.now()
+    };
+
+    await handlePaymentMethod(paymentDetails);
+    await verifyPayment(paymentId);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    document.querySelector('.loading-spinner').classList.add('hidden');
+  }
+};
+
+const updateReceiveAmount = async () => {
+  const payAmount = document.getElementById('payAmount').value;
+  const receiveInput = document.getElementById('receiveAmount');
+  if (!payAmount || isNaN(payAmount)) {
+    receiveInput.value = '';
+    return;
+  }
+  const rate = await getExchangeRate();
+  receiveInput.value = (parseFloat(payAmount) / rate).toFixed(8);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const continueBtn = document.getElementById('continueBtn');
+  const step2 = document.getElementById('step2');
+  
+  // Initially hide the step 2 section
+  step2.classList.add('hidden');
+
+  continueBtn.addEventListener('click', () => {
+      // Show the wallet address and payment method sections
+      step2.classList.remove('hidden');
+  });
+});
+
+  document.getElementById('payAmount').addEventListener('input', updateReceiveAmount);
+
+  document.querySelectorAll('.payment-method').forEach(method => {
+    method.addEventListener('click', () => {
+      document.querySelectorAll('.payment-method').forEach(m => m.style.borderColor = '');
+      method.style.borderColor = 'var(--primary-color)';
+      state.selectedPaymentMethod = method;
+    });
+  });
+
+  const updateStep = (step) => {
+    state.currentStep = step;
+    document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+    document.querySelector(`.step-${step}`).classList.remove('hidden');
+    document.querySelector('.steps-indicator').innerText = `Step ${step} of 4: ${steps[step]}`;
+};
+
+  document.getElementById('continueBtn').addEventListener('click', async () => {
+    const payInput = document.getElementById('payAmount');
+    switch (state.currentStep) {
+        case 1:
+            if (!payInput.value || isNaN(payInput.value)) {
+                alert('Enter a valid amount');
+                return;
+            }
+            updateStep(2);
+            break;
+        case 2:
+            if (!state.connected) {
+                const address = await connectWallet();
+                document.getElementById('walletAddress').value = address; // Update the input field
+            }
+            updateStep(3); // Move to step 3 to show wallet input and payment methods
+            break;
+        case 3:
+            if (!state.selectedPaymentMethod) {
+                alert('Select a payment method');
+                return;
+            }
+            updateStep(4); // Move to step 4 for transaction confirmation
+            break;
+        case 4:
+            await processTransaction();
+            updateStep(1); // Reset to step 1 after transaction
+            state.selectedPaymentMethod = null;
+            payInput.value = '';
+            document.getElementById('receiveAmount').value = '';
+            break;
+    }
+});

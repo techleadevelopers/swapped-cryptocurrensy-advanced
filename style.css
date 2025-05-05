@@ -123,6 +123,36 @@ body::before {
   animation: buttonGlow 2s infinite;
 }
 
+
+
+.btc-icon{
+  position: relative;
+  left: 15em;
+  bottom: 40em;
+  width: 8%;
+  max-height: 10%;
+  opacity: 30%;
+  
+}
+
+.image-container {
+  position: relative;
+  height: 100vh; /* Altura total da viewport */
+  background-color: #f0f0f0; /* Cor de fundo */
+  overflow: hidden; /* Impede rolagem da div */
+}
+.wallets-icon {
+  position: absolute; /* Usar absolute para posicionar */
+  bottom: 0em; /* Distância do fundo */
+  right: 35em; /* Ajuste horizontal */
+  height: auto;
+  z-index: -5;
+  width: 45%; /* Largura da imagem */
+  opacity: 0.3; /* Opacidade */
+}
+
+
+
 @keyframes buttonGlow {
   0% { transform: rotate(45deg) translateX(-100%); }
   100% { transform: rotate(45deg) translateX(100%); }
@@ -171,7 +201,7 @@ body::before {
   right: 0;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
-  padding: 16px 0;
+  padding: 10px 0;
   z-index: 1000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   animation: navbarGlow 4s infinite alternate;
@@ -204,7 +234,7 @@ body::before {
 }
 
 .nav-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -213,7 +243,7 @@ body::before {
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
   color: white;
 }
@@ -353,8 +383,6 @@ body::before {
 
 
 .swap-card {
-  position: relative;
-  right: 50px;
   background: var(--background-color);
   border-radius: 24px;
   padding: 24px;
@@ -624,6 +652,47 @@ body::before {
   background: var(--hover-color);
   border-radius: 8px;
   font-weight: 500;
+}
+
+.trust-badges {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 15px;
+}
+
+.trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #eee;
+  margin-top: 40px;
+}
+
+.trust-badge .badge-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.trust-badge span {
+  font-size: 0.95rem;
+}
+
+.trust-badge strong {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.security-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.security-info .security-icon {
+  width: 24px;
+  height: 24px;
 }
 
 @media (max-width: 768px) {
