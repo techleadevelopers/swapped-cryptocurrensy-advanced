@@ -587,16 +587,7 @@ body::before {
   }
 }
 
-@media (max-width: 480px) {
-  .swap-card {
-    border-radius: 16px;
-    padding: 16px;
-  }
 
-  .methods-grid {
-    grid-template-columns: 1fr;
-  }
-}
 .payment-modal {
   position: fixed;
   top: 0;
@@ -633,4 +624,360 @@ body::before {
   background: var(--hover-color);
   border-radius: 8px;
   font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-top: 60px; /* Ajusta o padding superior do body para o navbar menor */
+  }
+
+  /* Navbar Adjustments */
+  .navbar {
+    padding: 10px 20px; /* Padding horizontal e vertical reduzido */
+    flex-direction: row; /* Itens do navbar em linha */
+    justify-content: space-between; /* Logo à esquerda, menu à direita */
+    align-items: center; /* Alinhamento vertical centralizado */
+  }
+
+  .nav-content {
+    flex-direction: row; /* Logo e links em linha */
+    justify-content: space-between; /* Espaço entre logo e links */
+    align-items: center;
+    padding: 0; /* Remove padding interno */
+    width: 100%; /* Ocupa a largura total */
+  }
+
+  .logo {
+    margin-bottom: 0; /* Remove margem inferior */
+    font-size: 20px; /* Reduz o tamanho da fonte do logo */
+  }
+
+  .nav-links {
+    flex-direction: row; /* Links em linha */
+    gap: 15px; /* Reduz o espaçamento entre os links */
+    text-align: left; /* Alinha o texto dos links à esquerda */
+  }
+
+  .nav-links a {
+    padding: 6px 0; /* Reduz o padding vertical dos links */
+    font-size: 14px; /* Reduz o tamanho da fonte dos links */
+  }
+
+  /* Swap Card Positioning */
+  #app {
+    padding: 20px; /* Reduz o padding geral */
+    gap: 20px; /* Reduz o espaçamento entre as seções */
+    flex-direction: column; /* Garante que os itens fiquem em coluna inicialmente */
+  }
+
+  .swap-card-container {
+    order: -1; /* Coloca este container no topo */
+    display: flex;
+    justify-content: flex-end; /* Alinha o swap card à direita */
+    margin-bottom: 20px; /* Espaço abaixo do swap card */
+  }
+
+  .swap-card {
+    position: relative;
+    left: 20px;
+    width: 90%; /* Ocupa 90% da largura */
+    max-width: 400px; /* Largura máxima para não ficar muito grande */
+    padding: 16px; /* Reduz o padding interno do swap card */
+    border-radius: 16px; /* Arredonda um pouco as bordas */
+  }
+
+  /* Positioning of Hero Content (h1 and p) */
+  .content-left {
+    width: 120%;
+    display: flex;
+    margin-top: 60px;
+    flex-direction: column; /* Organiza h1 e p em coluna inicialmente */
+    padding: 19px; /* Reduz o padding da seção de conteúdo */
+  }
+
+  .hero-and-swap {
+    display: flex;
+    flex-direction: column; /* Empilha inicialmente */
+  }
+
+  @media (min-width: 600px) { /* Para telas um pouco maiores, coloca lado a lado */
+    .hero-and-swap {
+      flex-direction: row;
+      align-items: flex-start; /* Alinha ao topo */
+      gap: 20px; /* Espaçamento entre o texto e o swap card */
+    }
+
+    .content-left {
+      flex: 1; /* O conteúdo de texto ocupa o espaço restante */
+    }
+
+    .swap-card-container {
+      width: 45%; /* Largura para o swap card ao lado do texto */
+      margin-bottom: 0; /* Remove a margem inferior quando ao lado */
+    }
+
+    .hero-section {
+      text-align: left; /* Alinha o texto à esquerda quando ao lado do swap card */
+    }
+  }
+
+  .hero-section h1 {
+    font-size: 28px; /* Reduz o tamanho da fonte do título */
+    margin-bottom: 10px;
+    margin-top: 0; /* Remove a margem superior */
+  }
+
+  .hero-section p {
+    font-size: 16px; /* Mantém o tamanho da fonte do parágrafo */
+  }
+
+  /* Ajustes para os cards de estatísticas */
+  .stats-container {
+    flex-direction: column; /* Mantém os cards em coluna */
+    width: 60%; /* Reduz a largura do container dos cards */
+    margin-top: 5px; /* Reduz a margem superior do container */
+    gap: 5px; /* Reduz o espaçamento entre os cards */
+    margin-left: auto; /* Centraliza o container horizontalmente */
+    margin-right: auto; /* Centraliza o container horizontalmente */
+  }
+
+  .stat-card {
+    padding: 8px; /* Reduz o padding interno dos cards */
+  }
+
+  .stat-card h3 {
+    font-size: 9px;
+    margin-bottom: 3px;
+  }
+
+  .stat-card p {
+    font-size: 14px;
+  }
+
+  .payment-methods {
+    margin: 16px 0;
+  }
+
+  .methods-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .payment-method {
+    padding: 10px;
+    gap: 5px;
+  }
+
+  .payment-method img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .terms {
+    font-size: 0.8em;
+    margin-top: 10px;
+  }
+
+  .transaction-history {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .transaction-list {
+    padding: 8px;
+  }
+
+  .transaction-item {
+    padding: 8px;
+    font-size: 0.8em;
+  }
+
+  .transaction-notification {
+    top: 10px;
+    right: 10px;
+    padding: 10px;
+    font-size: 0.9em;
+  }
+
+  .notification-content {
+    gap: 8px;
+  }
+
+  .check-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+
+/* 📱 Responsividade */
+@media (max-width: 480px) {
+
+  /* Layout Principal */
+  .navbar {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .hero-section {
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .content-left {
+    padding: 1rem;
+  }
+  .swap-card {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-info, .transaction-summary, .transaction-list {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 20px rgba(123, 75, 255, 0.2);
+    backdrop-filter: blur(10px);
+  }
+  .payment-method {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 0 15px rgba(0, 232, 255, 0.15);
+  }
+  .wallet-input input:focus {
+    box-shadow: 0 0 10px rgba(0, 232, 255, 0.2);
+  }
+  .input-group input:focus {
+    box-shadow: 0 0 10px rgba(123, 75, 255, 0.2);
+  }
+  .currency-selector {
+    box-shadow: 0 0 12px rgba(123, 75, 255, 0.15);
+  }
+    
+  .background-grid {
+    display: none;
+  }
+
+  /* Cards & Containers */
+  .swap-card,
+  .stat-card,
+  .transaction-notification {
+    width: 100%;
+    padding: 1rem;
+    margin: 0.5rem 0;
+  }
+
+  .wallet-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Indicadores */
+  .steps-indicator {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .stats-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Inputs & Forms */
+  .currency-input,
+  .wallet-input,
+  .input-group {
+    width: 100%;
+  }
+
+  .methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-method {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .payment-method .fee {
+    margin-top: 0.5rem;
+  }
+
+  /* Botões */
+  .continue-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .toggle-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Listagens & Histórico */
+  .transaction-list {
+    flex-direction: column;
+  }
+
+  .transaction-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  /* Modais */
+  .payment-modal {
+    width: 95%;
+    padding: 1rem;
+  }
+
+  /* Animações e Elementos Flutuantes */
+  .floating-circles {
+    display: none;
+  }
+
+  /* Outros ajustes */
+  .terms {
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .logo {
+    margin: 0 auto;
+  }
+  .nav-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .transaction-summary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .exchange-rate {
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+  .check-icon,
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+  }
+  @media (max-width: 480px) {
+    .background-pulse,
+    .glow-pulse,
+    .button-glow {
+      animation: none;
+    }
+  }
+  #app {
+    padding: 1rem;
+  }
+              
+
 }

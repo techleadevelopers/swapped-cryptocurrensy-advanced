@@ -51,3 +51,4 @@ ehthumbs.db
 # Others
 *.bak
 *.tmp
+.vercel

@@ -8,7 +8,9 @@
     "serve": "vite preview"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.5",
-    "vite": "^6.2.2"
+    "@fontsource/inter": "^5.2.5"
+  },
+  "devDependencies": {
+    "vite": "^6.3.4"
   }
 }
