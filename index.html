@@ -5,10 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NexSwap - Buy & Sell Crypto Simply</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="advanced-ui.css">
     <style>
+        /* Estilos para ocultar elementos */
         .hidden {
-            display: none; /* Hide elements */
+            display: none !important;
+        }
+
+        /* Estilo para indicar o método de pagamento selecionado */
+        .payment-method.selected {
+            border: 2px solid #6c63ff; /* Cor roxa primária */
+            box-shadow: 0 0 8px rgba(108, 99, 255, 0.7);
+        }
+
+        /* Estilos para a seção de informações de pagamento (Ultra Moderno e Robusto) */
+        .payment-info {
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            background: linear-gradient(145deg, #e0e0e0, #ffffff);
+            box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
+            text-align: center;
+        }
+
+        .payment-info h3 {
+            color: #444;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .qr-code-container {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #fff;
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+
+        .qr-code-image {
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .payment-summary-text {
+            color: #555;
+            line-height: 1.7;
+            font-size: 1.1em;
+            
+        }
+
+        .payment-summary-text strong {
+            font-weight: 600;
+            color: #333;
+            z-index: -10;
+        }
+
+        .confirm-payment-btn {
+            background-color: #6c63ff; /* Cor roxa primária */
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 25px;
+            box-shadow: 3px 3px 6px #b3b1b1, -3px -3px 6px #fff;
+        }
+
+        .confirm-payment-btn:hover {
+            background-color: #564bff;
+            box-shadow: 5px 5px 10px #b3b1b1, -5px -5px 10px #fff;
+        }
+
+        /* Esconde a seção de entrada e métodos de pagamento quando a info de pagamento é visível */
+        .input-section.hidden,
+        .step-2.hidden,
+        .continue-btn.hidden,
+        .terms.hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -24,6 +102,7 @@
             </div>
         </div>
     </nav>
+    <img src="/images/btc-icon.png" class="wallets-icon" />
 
     <div class="background-grid"></div>
 
@@ -63,7 +142,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="swap-card">
             <div class="card-header">
                 <div class="toggle-container">
@@ -72,72 +151,78 @@
                 </div>
             </div>
 
-            <div class="input-section">
-                <div class="currency-input">
-                    <label for="payAmount">Pay</label>
-                    <div class="input-group">
-                        <input type="number" id="payAmount" placeholder="0.00" />
-                        <button class="currency-selector" id="payCurrency">
-                            <img src="/brl.png" alt="BRL" width="24" />
-                            <span>BRL</span>
-                            <svg class="arrow-icon" viewBox="0 0 24 24">
-                                <path d="M7 10l5 5 5-5z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+            <div class="input-section" id="inputSection">
+              <div class="currency-input">
+                  <label for="payAmount">Pay</label>
+                  <div class="input-group">
+                      <input type="number" id="payAmount" placeholder="0.00" />
+                      <button class="currency-selector" id="payCurrency">
+                          <img src="/images/brl.png" alt="BRL" width="24" />
+                          <span>BRL</span>
+                          <svg class="arrow-icon" viewBox="0 0 24 24">
+                              <path d="M7 10l5 5 5-5z"/>
+                          </svg>
+                      </button>
+                      <div id="payDropdown" class="dropdown-options hidden"></div>
+                  </div>
+              </div>
+          
+              <div class="exchange-rate">
+                  <span class="rate-text">1 BTC ≈ 250,000 BRL</span>
+                  <div class="loading-spinner hidden"></div>
+              </div>
+          
+              <div class="currency-input">
+                  <label for="receiveAmount">Receive</label>
+                  <div class="input-group">
+                      <input type="number" id="receiveAmount" placeholder="0.00" readonly />
+                      <button class="currency-selector" id="receiveCurrency">
+                          <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png" alt="BTC" />
+                          <span>BTC</span>
+                          <svg class="arrow-icon" viewBox="0 0 24 24">
+                              <path d="M7 10l5 5 5-5z"/>
+                          </svg>
+                      </button>
+                      <div id="receiveDropdown" class="dropdown-options hidden"></div>
+                  </div>
+              </div>
+          </div>
+          
 
-                <div class="exchange-rate">
-                    <span class="rate-text">1 BTC ≈ 250,000 BRL</span>
-                    <div class="loading-spinner hidden"></div>
-                </div>
+            <div class="step-2" id="step2">
+              <div class="order-summary-step2">
+                  <p>Pagar: <strong id="displayPayAmountStep2"></strong></p>
+                  <p>Receber: <strong id="displayReceiveAmountStep2"></strong></p>
+              </div>
+              <div class="wallet-input">
+                  <label for="walletAddress">Wallet Address</label>
+                  <div class="input-group">
+                      <input type="text" id="walletAddress" placeholder="Enter your wallet address (0x...)" />
+                  </div>
+              </div>
 
-                <div class="currency-input">
-                    <label for="receiveAmount">Receive</label>
-                    <div class="input-group">
-                        <input type="number" id="receiveAmount" placeholder="0.00" readonly />
-                        <button class="currency-selector" id="receiveCurrency">
-                            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png" alt="BTC" />
-                            <span>BTC</span>
-                            <svg class="arrow-icon" viewBox="0 0 24 24">
-                                <path d="M7 10l5 5 5-5z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="step-2 hidden" id="step2">
-                <div class="wallet-input">
-                    <label>Wallet Address</label>
-                    <div class="input-group">
-                        <input type="text" id="walletAddress" placeholder="Enter your wallet address (0x...)" />
-                    </div>
-                </div>
-                
-                <div class="payment-methods">
-                    <h3>Choose payment method</h3>
-                    <div class="methods-grid">
-                        <button class="payment-method" data-method="pix">
-                            <img src="/pix.png" alt="PIX" />
-                            <span>PIX</span>
-                            <span class="fee">Fee: 1.7%</span>
-                        </button>
-                        <button class="payment-method" data-method="visa">
-                            <img src="/visa.png" alt="VISA" />
-                            <span>VISA</span>
-                            <span class="fee">Fee: 1.5%</span>
-                        </button>
-                        <button class="payment-method" data-method="mastercard">
-                            <img src="/mastercard.png" alt="Mastercard" />
-                            <span>Mastercard</span>
-                            <span class="fee">Fee: 1.7%</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <button class="continue-btn" id="continueBtn">
+              <div class="payment-methods">
+                  <h3>Choose payment method</h3>
+                  <div class="methods-grid">
+                      <button class="payment-method" data-method="pix">
+                          <img src="/images/pix.png" alt="PIX" />
+                          <span>PIX</span>
+                          <span class="fee">Fee: 1.7%</span>
+                      </button>
+                      <button class="payment-method" data-method="visa">
+                          <img src="/images/visa.png" alt="VISA" />
+                          <span>VISA</span>
+                          <span class="fee">Fee: 1.5%</span>
+                      </button>
+                      <button class="payment-method" data-method="mastercard">
+                          <img src="/images/mastercard.png" alt="Mastercard" />
+                          <span>Mastercard</span>
+                          <span class="fee">Fee: 1.7%</span>
+                      </button>
+                  </div>
+              </div>
+          </div>
+            <button type="button" class="continue-btn" id="continueBtn">
                 Continue
                 <svg viewBox="0 0 24 24">
                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
@@ -147,27 +232,289 @@
             <div class="terms">
                 By buying, you agree to our <a href="#">terms of service</a>
             </div>
-        </div>
-        <div clss="image-container">
-        <img src="/btc-icon.png" class="wallets-icon" />
-       </div>
-    </div>
+
+            <div class="payment-info hidden" id="paymentInfoSection">
+                <p class="payment-summary-text">
+                    <strong>Amount:</strong> <span id="paymentAmount"></span><br>
+                    <strong>Payment Method:</strong> <span id="paymentMethod"></span><br>
+                    <strong>Wallet:</strong> <span id="paymentWallet"></span><br>
+                    <strong>Chave PIX:</strong> <span id="pixKey"></span>
+                </p>
+                <img id="qrCodeImg" src="" alt="QR Code PIX" />
+                <div id="statusMessage"></div>
+                <button class="confirm-payment-btn">Confirm Payment</button>
+            </div>
+            
+            
+   <!-- ... (todo o conteúdo anterior do seu HTML permanece igual) ... -->
+
+   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const continueBtn = document.getElementById('continueBtn');
+        const step2 = document.getElementById('step2');
+        const inputSection = document.getElementById('inputSection');
+        const toggleContainer = document.querySelector('.toggle-container');
+        const rateText = document.querySelector('.rate-text');
+        const payAmount = document.getElementById('payAmount');
+        const receiveAmount = document.getElementById('receiveAmount');
+        const paymentMethods = document.querySelectorAll('.payment-method');
+        const paymentInfoSection = document.getElementById('paymentInfoSection');
+        const paymentAmountDisplay = document.getElementById('paymentAmount');
+        const paymentMethodDisplay = document.getElementById('paymentMethod');
+        const paymentWalletDisplay = document.getElementById('paymentWallet');
+        const pixKeyDisplay = document.getElementById('pixKey');
+        const qrCodeImg = document.getElementById('qrCodeImg');
+        const statusMessage = document.getElementById('statusMessage');
+        const terms = document.querySelector('.terms');
     
-     
-
-    <script type="module">
-        document.addEventListener('DOMContentLoaded', () => {
-            const continueBtn = document.getElementById('continueBtn');
-            const step2 = document.getElementById('step2');
-
-            // Ensure step 2 is hidden initially
-            step2.classList.add('hidden');
-
-            continueBtn.addEventListener('click', () => {
-                // Show the wallet address and payment method sections
-                step2.classList.remove('hidden');
+        const displayPayAmountStep2 = document.getElementById('displayPayAmountStep2');
+        const displayReceiveAmountStep2 = document.getElementById('displayReceiveAmountStep2');
+    
+        let selectedMethod = null;
+        let orderId = null;
+        let pollingInterval = null;
+        let currentStep = 1;
+    
+        step2.classList.add('hidden');
+        paymentInfoSection.classList.add('hidden');
+        inputSection.classList.remove('hidden');
+        continueBtn.classList.remove('hidden');
+        toggleContainer.classList.remove('hidden');
+        terms.classList.remove('hidden');
+    
+        let btcToBrl = 0;
+    
+        fetch("http://localhost:3000/api/price")
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                btcToBrl = data.brl;
+                rateText.textContent = `1 BTC ≈ ${btcToBrl.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                })}`;
+    
+                payAmount.addEventListener('input', () => {
+                    const brlValue = parseFloat(payAmount.value);
+                    if (!isNaN(brlValue) && brlValue > 0 && btcToBrl) {
+                        const btcValue = brlValue / btcToBrl;
+                        receiveAmount.value = btcValue.toFixed(8);
+                    } else {
+                        receiveAmount.value = '';
+                    }
+                });
+            })
+            .catch(err => {
+                console.error("Erro ao buscar a taxa BTC:", err);
+                rateText.textContent = "Erro ao buscar a taxa 😓";
+            });
+    
+        paymentMethods.forEach(btn => {
+            btn.addEventListener('click', () => {
+                paymentMethods.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedMethod = btn.dataset.method;
             });
         });
+    
+        continueBtn.addEventListener('click', async () => {
+            continueBtn.disabled = true;
+            setTimeout(() => continueBtn.disabled = false, 1000);
+    
+            if (currentStep === 1) {
+                const amountBRL = payAmount.value.trim();
+                const amountBTC = receiveAmount.value.trim();
+    
+                if (!amountBRL || parseFloat(amountBRL) <= 0) {
+                    alert("Digite um valor válido.");
+                    return;
+                }
+    
+                if (!amountBTC || parseFloat(amountBTC) <= 0) {
+                    alert("Erro ao calcular a quantidade de BTC.");
+                    return;
+                }
+    
+                displayPayAmountStep2.textContent = `${parseFloat(amountBRL).toFixed(2)} BRL`;
+                displayReceiveAmountStep2.textContent = `${parseFloat(amountBTC).toFixed(6)} BTC`;
+    
+                inputSection.classList.add('hidden');
+                step2.classList.remove('hidden');
+                currentStep = 2;
+            } else if (currentStep === 2) {
+                const wallet = document.getElementById('walletAddress').value.trim();
+                const selectedMethodElement = document.querySelector('.payment-method.selected');
+    
+                if (!wallet) {
+                    alert("Digite o endereço da sua carteira.");
+                    return;
+                }
+    
+                if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+                    alert("Endereço de carteira inválido.");
+                    return;
+                }
+    
+                if (!selectedMethodElement) {
+                    alert("Selecione um método de pagamento.");
+                    return;
+                }
+    
+                const selectedMethod = selectedMethodElement.dataset.method;
+                const amountBRL = payAmount.value.trim();
+                const amountBTC = receiveAmount.value.trim();
+    
+                try {
+                    const res = await fetch("http://localhost:3000/api/order", {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            amountBRL: parseFloat(amountBRL),
+                            amountBTC: parseFloat(amountBTC),
+                            address: wallet,
+                            paymentMethod: selectedMethod
+                        })
+                    });
+    
+                    if (!res.ok) {
+                        const error = await res.json();
+                        alert(`Erro ao criar ordem: ${error.message || 'Erro inesperado.'}`);
+                        return;
+                    }
+    
+                    const data = await res.json();
+                    orderId = data.orderId;
+    
+                    if (!data.orderId || !data.pixKey || !data.qrCodeUrl) {
+                        alert("Erro: Dados incompletos recebidos.");
+                        return;
+                    }
+    
+                    paymentAmountDisplay.textContent = `${amountBRL} BRL (${amountBTC} BTC)`;
+                    paymentMethodDisplay.textContent = selectedMethod.toUpperCase();
+                    paymentWalletDisplay.textContent = wallet;
+                    pixKeyDisplay.textContent = data.pixKey;
+                    qrCodeImg.src = data.qrCodeUrl;
+    
+                    paymentInfoSection.classList.remove('hidden');
+                    inputSection.classList.add('hidden');
+                    step2.classList.add('hidden');
+                    continueBtn.classList.add('hidden');
+                    toggleContainer.classList.add('hidden');
+                    terms.classList.add('hidden');
+                    currentStep = 3;
+    
+                    pollingInterval = setInterval(async () => {
+                        if (!orderId) {
+                            clearInterval(pollingInterval);
+                            return;
+                        }
+    
+                        try {
+                            const statusRes = await fetch(`http://localhost:3000/api/order/${orderId}`);
+                            if (!statusRes.ok) return;
+    
+                            const statusData = await statusRes.json();
+                            if (statusData.status === 'concluída') {
+                                clearInterval(pollingInterval);
+                                statusMessage.innerHTML = `✅ Pagamento confirmado!<br>Hash da transação: <code>${statusData.txHash || 'N/A'}</code>`;
+                            } else if (statusData.status === 'cancelada' || statusData.status === 'expirada') {
+                                clearInterval(pollingInterval);
+                                statusMessage.innerHTML = `❌ Pagamento ${statusData.status}. Crie uma nova ordem.`;
+    
+                                payAmount.value = '';
+                                receiveAmount.value = '';
+                                document.getElementById('walletAddress').value = '';
+                            }
+                        } catch (pollingErr) {
+                            console.error("Erro durante polling:", pollingErr);
+                        }
+                    }, 5000);
+    
+                } catch (err) {
+                    alert("Erro ao processar pedido.");
+                    console.error("Erro ao criar ordem:", err);
+                }
+            }
+        });
+    
+        document.querySelectorAll('.toggle-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                currentStep = 1;
+                inputSection.classList.remove('hidden');
+                step2.classList.add('hidden');
+                paymentInfoSection.classList.add('hidden');
+                continueBtn.classList.remove('hidden');
+                toggleContainer.classList.remove('hidden');
+                terms.classList.remove('hidden');
+    
+                payAmount.value = '';
+                receiveAmount.value = '';
+                document.getElementById('walletAddress').value = '';
+                paymentMethods.forEach(b => b.classList.remove('selected'));
+                selectedMethod = null;
+    
+                displayPayAmountStep2.textContent = '';
+                displayReceiveAmountStep2.textContent = '';
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+                statusMessage.textContent = '';
+    
+                document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
+        });
+    
+        // CATEGORIZADAS AGORA
+        const fiatCurrencies = [
+            { code: "BRL", name: "Real Brasileiro", icon: "/images/brl.png" },
+            { code: "USD", name: "Dólar Americano", icon: "/images/usd.png" },
+            { code: "EUR", name: "Euro", icon: "/images/eur.png" }
+        ];
+    
+        const cryptoCurrencies = [
+            { code: "BTC", name: "Bitcoin", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png" },
+            { code: "ETH", name: "Ethereum", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/eth.png" },
+            { code: "USDT", name: "Tether", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/usdt.png" }
+        ];
+    
+        function createCurrencyDropdown(containerId, buttonId, type) {
+            const dropdown = document.getElementById(containerId);
+            const button = document.getElementById(buttonId);
+    
+            const currencies = type === 'pay' ? fiatCurrencies : cryptoCurrencies;
+    
+            button.addEventListener('click', () => {
+                dropdown.classList.toggle('hidden');
+            });
+    
+            currencies.forEach(currency => {
+                const option = document.createElement('div');
+                option.className = 'dropdown-option';
+                option.innerHTML = `
+                    <img src="${currency.icon}" width="20" />
+                    <span>${currency.code}</span>
+                `;
+                option.addEventListener('click', () => {
+                    button.querySelector('img').src = currency.icon;
+                    button.querySelector('span').innerText = currency.code;
+                    dropdown.classList.add('hidden');
+                    console.log(`Selected ${type}: ${currency.code}`);
+                });
+                dropdown.appendChild(option);
+            });
+        }
+    
+        createCurrencyDropdown('payDropdown', 'payCurrency', 'pay');
+        createCurrencyDropdown('receiveDropdown', 'receiveCurrency', 'receive');
+    });
     </script>
+    
+
+
 </body>
 </html>

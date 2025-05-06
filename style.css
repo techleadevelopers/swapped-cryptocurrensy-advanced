@@ -142,15 +142,42 @@ body::before {
   overflow: hidden; /* Impede rolagem da div */
 }
 .wallets-icon {
-  position: absolute; /* Usar absolute para posicionar */
-  bottom: 0em; /* Distância do fundo */
-  right: 35em; /* Ajuste horizontal */
+  position: absolute;
+  bottom: 0em;
+  right: 35em;
   height: auto;
   z-index: -5;
-  width: 45%; /* Largura da imagem */
-  opacity: 0.3; /* Opacidade */
+  width: 45%;
+  opacity: 0.3;
 }
 
+
+/* Adicione estas regras ao seu arquivo CSS (por exemplo, advanced-ui.css ou style.css) */
+
+.order-summary-step2 {
+  border-radius: 10px; /* Cantos arredondados */
+  max-width: 300px; /* Limita a largura para que não ocupe o card todo */
+  width: 90%; /* Garante que seja responsivo */
+  backdrop-filter: blur(5px); /* Efeito de "vidro fosco" (se o fundo permitir) */
+  margin-bottom: 20px;
+  }
+
+.order-summary-step2 p {
+  margin: 0px 0; /* Espaçamento entre os parágrafos (Pagar e Receber) */
+  font-size: 0.9em; /* Tamanho da fonte um pouco maior */
+  color: #333; /* Cor do texto principal */
+  
+}
+
+.order-summary-step2 strong {
+  color: #6c63ff; /* Cor de destaque para os valores (roxa primária) */
+  font-weight: 500; /* Deixa os valores em negrito */
+  
+}
+
+/
+
+/* Ajuste para o layout do card se necessário */
 
 
 @keyframes buttonGlow {
@@ -416,15 +443,67 @@ body::before {
 
 .currency-input,
 .wallet-input {
-  margin-bottom: 24px;
+  margin-bottom: 4px;
+  font-weight: 600; /* Deixa os valores em negrito */
+  
 }
+
+.input-group {
+  position: relative; /* Permite o posicionamento absoluto do dropdown */
+}
+
+.currency-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 6px); /* Fica logo abaixo do botão */
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0px 8px 20px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.dropdown-options.hidden {
+  display: none;
+}
+
+.dropdown-options div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dropdown-options div:hover {
+  background-color: #f0f0f0;
+}
+
 
 .wallet-input input {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 10px;
+  
 }
 
 .wallet-input input:focus {
@@ -695,36 +774,105 @@ body::before {
   height: 24px;
 }
 
+
+/* index.css */
+
+/* Estilos para a seção de informações de pagamento (Ultra Moderno e Robusto - Ajustado) */
+.payment-info {
+  margin-top: 30px;
+  padding: 30px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #e0e0e0, #ffffff);
+  box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
+  text-align: center;
+  position: relative; /* Para posicionar o texto "By buying..." corretamente */
+}
+
+.payment-info h3 {
+  color: #444;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.qr-code-container {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #fff;
+  display: inline-block;
+  margin-bottom: 25px;
+}
+
+.qr-code-image {
+  max-width: 180px;
+  height: auto;
+  border-radius: 8px;
+}
+
+
+#paymentWallet {
+  word-break: break-all;
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+
+
+.confirm-payment-btn {
+  background-color: #6c63ff; /* Cor roxa primária */
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 15px 30px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  margin-top: 25px;
+  box-shadow: 3px 3px 6px #b3b1b1, -3px -3px 6px #fff;
+}
+
+.confirm-payment-btn:hover {
+  background-color: #564bff;
+  box-shadow: 5px 5px 10px #b3b1b1, -5px -5px 10px #fff;
+}
+
+.payment-terms-below {
+  color: #777;
+  font-size: 0.9em;
+  margin-top: 20px;
+}
+
 @media (max-width: 768px) {
   body {
     padding-top: 60px; /* Ajusta o padding superior do body para o navbar menor */
   }
 
-  /* Navbar Adjustments */
+  /* Ajustes no Navbar */
   .navbar {
-    padding: 10px 20px; /* Padding horizontal e vertical reduzido */
-    flex-direction: row; /* Itens do navbar em linha */
-    justify-content: space-between; /* Logo à esquerda, menu à direita */
-    align-items: center; /* Alinhamento vertical centralizado */
+    padding: 10px 20px; /* Reduz o padding horizontal e vertical */
+    flex-direction: column; /* Organiza os itens em coluna */
+    align-items: center; /* Centraliza os itens verticalmente */
   }
 
   .nav-content {
-    flex-direction: row; /* Logo e links em linha */
-    justify-content: space-between; /* Espaço entre logo e links */
-    align-items: center;
-    padding: 0; /* Remove padding interno */
+    flex-direction: column; /* Organiza logo e links em coluna */
+    align-items: center; /* Centraliza os itens */
+    padding: 10px 0; /* Adiciona um pouco de padding vertical */
     width: 100%; /* Ocupa a largura total */
   }
 
   .logo {
-    margin-bottom: 0; /* Remove margem inferior */
+    margin-bottom: 10px; /* Adiciona espaço abaixo do logo */
     font-size: 20px; /* Reduz o tamanho da fonte do logo */
   }
 
   .nav-links {
-    flex-direction: row; /* Links em linha */
+    flex-direction: row; /* Mantém os links em linha para telas maiores que mobile pequeno */
     gap: 15px; /* Reduz o espaçamento entre os links */
-    text-align: left; /* Alinha o texto dos links à esquerda */
+    text-align: center; /* Centraliza o texto dos links */
   }
 
   .nav-links a {
@@ -732,152 +880,137 @@ body::before {
     font-size: 14px; /* Reduz o tamanho da fonte dos links */
   }
 
-  /* Swap Card Positioning */
+  /* Posicionamento do Card de Swap */
   #app {
     padding: 20px; /* Reduz o padding geral */
     gap: 20px; /* Reduz o espaçamento entre as seções */
-    flex-direction: column; /* Garante que os itens fiquem em coluna inicialmente */
-  }
-
-  .swap-card-container {
-    order: -1; /* Coloca este container no topo */
-    display: flex;
-    justify-content: flex-end; /* Alinha o swap card à direita */
-    margin-bottom: 20px; /* Espaço abaixo do swap card */
+    flex-direction: column; /* Garante que os itens fiquem em coluna */
+    align-items: center; /* Centraliza os itens horizontalmente */
   }
 
   .swap-card {
-    position: relative;
-    left: 20px;
     width: 90%; /* Ocupa 90% da largura */
     max-width: 400px; /* Largura máxima para não ficar muito grande */
-    padding: 16px; /* Reduz o padding interno do swap card */
+    padding: 20px; /* Reduz o padding interno do swap card */
     border-radius: 16px; /* Arredonda um pouco as bordas */
+    margin-bottom: 20px; /* Adiciona espaço abaixo do card */
   }
 
-  /* Positioning of Hero Content (h1 and p) */
+  /* Posicionamento do Conteúdo Principal (h1 e p) */
   .content-left {
-    width: 120%;
     display: flex;
-    margin-top: 60px;
-    flex-direction: column; /* Organiza h1 e p em coluna inicialmente */
-    padding: 19px; /* Reduz o padding da seção de conteúdo */
-  }
-
-  .hero-and-swap {
-    display: flex;
-    flex-direction: column; /* Empilha inicialmente */
-  }
-
-  @media (min-width: 600px) { /* Para telas um pouco maiores, coloca lado a lado */
-    .hero-and-swap {
-      flex-direction: row;
-      align-items: flex-start; /* Alinha ao topo */
-      gap: 20px; /* Espaçamento entre o texto e o swap card */
-    }
-
-    .content-left {
-      flex: 1; /* O conteúdo de texto ocupa o espaço restante */
-    }
-
-    .swap-card-container {
-      width: 45%; /* Largura para o swap card ao lado do texto */
-      margin-bottom: 0; /* Remove a margem inferior quando ao lado */
-    }
-
-    .hero-section {
-      text-align: left; /* Alinha o texto à esquerda quando ao lado do swap card */
-    }
+    flex-direction: column;
+    align-items: center; /* Centraliza o conteúdo horizontalmente */
+    padding: 20px; /* Reduz o padding da seção de conteúdo */
+    text-align: center; /* Centraliza o texto */
   }
 
   .hero-section h1 {
-    font-size: 28px; /* Reduz o tamanho da fonte do título */
+    font-size: 32px; /* Reduz o tamanho da fonte do título */
     margin-bottom: 10px;
-    margin-top: 0; /* Remove a margem superior */
+    margin-top: 20px; /* Adiciona um pouco de margem superior */
   }
 
   .hero-section p {
     font-size: 16px; /* Mantém o tamanho da fonte do parágrafo */
+    line-height: 1.5; /* Melhora a legibilidade do texto */
   }
 
   /* Ajustes para os cards de estatísticas */
   .stats-container {
-    flex-direction: column; /* Mantém os cards em coluna */
-    width: 60%; /* Reduz a largura do container dos cards */
-    margin-top: 5px; /* Reduz a margem superior do container */
-    gap: 5px; /* Reduz o espaçamento entre os cards */
-    margin-left: auto; /* Centraliza o container horizontalmente */
-    margin-right: auto; /* Centraliza o container horizontalmente */
+    flex-direction: row; /* Exibe os cards em linha */
+    justify-content: space-around; /* Distribui os cards igualmente */
+    width: 90%; /* Ocupa 90% da largura */
+    margin-top: 20px; /* Adiciona margem superior */
+    gap: 10px; /* Reduz o espaçamento entre os cards */
   }
 
   .stat-card {
-    padding: 8px; /* Reduz o padding interno dos cards */
+    padding: 10px; /* Reduz o padding interno dos cards */
+    text-align: center; /* Centraliza o texto dos cards */
   }
 
   .stat-card h3 {
-    font-size: 9px;
-    margin-bottom: 3px;
+    font-size: 11px;
+    margin-bottom: 5px;
   }
 
   .stat-card p {
-    font-size: 14px;
+    font-size: 18px;
   }
 
+  /* Métodos de Pagamento */
   .payment-methods {
-    margin: 16px 0;
+    margin: 20px 0;
   }
 
   .methods-grid {
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adapta o número de colunas */
+    gap: 10px;
   }
 
   .payment-method {
-    padding: 10px;
-    gap: 5px;
+    padding: 12px;
+    gap: 6px;
   }
 
   .payment-method img {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
+  /* Termos e Condições */
   .terms {
-    font-size: 0.8em;
-    margin-top: 10px;
+    font-size: 0.9em;
+    margin-top: 15px;
   }
 
+  /* Histórico de Transações */
   .transaction-history {
-    margin-top: 16px;
-    padding-top: 16px;
+    margin-top: 20px;
+    padding-top: 20px;
   }
 
   .transaction-list {
-    padding: 8px;
+    padding: 10px;
   }
 
   .transaction-item {
-    padding: 8px;
-    font-size: 0.8em;
-  }
-
-  .transaction-notification {
-    top: 10px;
-    right: 10px;
     padding: 10px;
     font-size: 0.9em;
   }
 
+  /* Notificações */
+  .transaction-notification {
+    top: 15px;
+    right: 15px;
+    padding: 12px;
+    font-size: 1em;
+  }
+
   .notification-content {
-    gap: 8px;
+    gap: 10px;
   }
 
   .check-icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
-}
 
+  /* Ícones de fundo (ajuste para não sobrecarregar telas menores) */
+  .btc-icon,
+  .wallets-icon {
+    opacity: 0.15; /* Reduz um pouco mais a opacidade */
+    /* Outros ajustes de posicionamento se necessário */
+  }
+  .wallets-icon {
+    right: 5%;
+    bottom: 5%;
+    width: 60%;
+  }
+
+  /* Outros ajustes visuais conforme necessário */
+}
 
 /* 📱 Responsividade */
 @media (max-width: 480px) {
