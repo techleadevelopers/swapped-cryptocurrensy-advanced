@@ -3,9 +3,9 @@ import 'dotenv/config';
 
 const EnvSchema = z.object({
   NODE_ENV: z.string().optional(),
-  RPC_URL: z.string().url(),
-  HOT_WALLET_KEY: z.string().min(10),
-  TOKEN_ADDRESS: z.string().min(10),
+  RPC_URL: z.string().url().optional(),
+  HOT_WALLET_KEY: z.string().min(10).optional(),
+  TOKEN_ADDRESS: z.string().min(10).optional(),
   TOKEN_DECIMALS: z.coerce.number().int().positive().default(8),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000'),
   WEBHOOK_SECRET: z.string().optional(),
@@ -17,7 +17,9 @@ const EnvSchema = z.object({
   ORDER_MIN_BRL: z.coerce.number().positive().default(10),
   ORDER_MAX_BRL: z.coerce.number().positive().default(100000),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(60_000),
-  RATE_LIMIT_MAX: z.coerce.number().positive().default(100)
+  RATE_LIMIT_MAX: z.coerce.number().positive().default(100),
+  ORDER_RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(60_000),
+  ORDER_RATE_LIMIT_MAX: z.coerce.number().positive().default(20)
 });
 
 const env = EnvSchema.parse(process.env);
@@ -36,5 +38,7 @@ export const config = {
   orderMinBrl: env.ORDER_MIN_BRL,
   orderMaxBrl: env.ORDER_MAX_BRL,
   rateLimitWindowMs: env.RATE_LIMIT_WINDOW_MS,
-  rateLimitMax: env.RATE_LIMIT_MAX
+  rateLimitMax: env.RATE_LIMIT_MAX,
+  orderRateLimitWindowMs: env.ORDER_RATE_LIMIT_WINDOW_MS,
+  orderRateLimitMax: env.ORDER_RATE_LIMIT_MAX
 };
