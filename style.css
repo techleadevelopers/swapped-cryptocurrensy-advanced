@@ -784,7 +784,9 @@ body::before {
 /* Estilos para a seção de informações de pagamento (Ultra Moderno e Robusto - Ajustado) */
 .payment-info {
   margin-top: 20px;
-  padding: 0;
+  padding: 24px 0;
+  min-height: 280px;
+  width: 100%;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -811,6 +813,8 @@ body::before {
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: center;
+  width: 100%;
 }
 
 #countdownTimer {
@@ -819,6 +823,65 @@ body::before {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.5px;
   color: var(--primary-color);
+}
+
+.countdown-circle {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid #d9d9d9;
+  background: radial-gradient(70% 70% at 30% 20%, #f8f8fa 10% 40%, #f2f2f6, #e7e8ee);
+  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.countdown-circle::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 6px solid #c5c8d0;
+  border-color: #c5c8d0 #c5c8d0 #a6a9b3 #c5c8d0;
+  opacity: 0.8;
+}
+
+.countdown-display {
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.cd-group {
+  display: grid;
+  place-items: center;
+}
+
+.cd-time {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1f1f1f;
+  letter-spacing: -0.3px;
+}
+
+.cd-label {
+  margin-top: 2px;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+  color: #9aa1ae;
+}
+
+.cd-divider {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #8c94a3;
+  translate: 0 -2px;
 }
 
 .payment-info h3 {
