@@ -1114,7 +1114,7 @@ body::before {
   }
 
   .hero-section h1 {
-    font-size: 32px; /* Reduz o tamanho da fonte do título */
+    font-size: 30px; /* Reduz o tamanho da fonte do título */
     margin-bottom: 10px;
     margin-top: 20px; /* Adiciona um pouco de margem superior */
   }
