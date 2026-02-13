@@ -269,7 +269,24 @@
                 </div>
                 <img id="qrCodeImg" src="" alt="QR Code PIX" />
                 <div id="countdownBlock" class="hidden countdown">
-                    Tempo para pagamento: <span id="countdownTimer">15:00,00</span>
+                    <div class="countdown-circle">
+                        <div class="countdown-display">
+                            <div class="cd-group">
+                                <span class="cd-time" id="cdMinutes">15</span>
+                                <span class="cd-label">MIN</span>
+                            </div>
+                            <span class="cd-divider">:</span>
+                            <div class="cd-group">
+                                <span class="cd-time" id="cdSeconds">00</span>
+                                <span class="cd-label">SEC</span>
+                            </div>
+                            <span class="cd-divider">.</span>
+                            <div class="cd-group">
+                                <span class="cd-time" id="cdCentis">00</span>
+                                <span class="cd-label">MS</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div id="statusMessage"></div>
                 <button class="confirm-payment-btn" id="confirmPaymentBtn">Confirm Payment</button>
@@ -295,6 +312,7 @@
         const paymentWalletDisplay = document.getElementById('paymentWallet');
         const walletRow = document.getElementById('walletRow');
         const pixKeyDisplay = document.getElementById('pixKey');
+        const paymentSummary = document.getElementById('paymentSummary');
         const qrCodeImg = document.getElementById('qrCodeImg');
         const statusMessage = document.getElementById('statusMessage');
         const terms = document.querySelector('.terms');
@@ -305,9 +323,11 @@
         const sellDepositBlock = document.getElementById('sellDepositBlock');
         const sellDepositInput = document.getElementById('sellDepositAddressInput');
         const sellNetworkSelect = document.getElementById('sellNetwork');
-        const confirmBtn = document.querySelector('.confirm-payment-btn');
+        const confirmBtn = document.getElementById('confirmPaymentBtn');
         const countdownBlock = document.getElementById('countdownBlock');
-        const countdownTimer = document.getElementById('countdownTimer');
+        const cdMinutes = document.getElementById('cdMinutes');
+        const cdSeconds = document.getElementById('cdSeconds');
+        const cdCentis = document.getElementById('cdCentis');
     
         const displayPayAmountStep2 = document.getElementById('displayPayAmountStep2');
         const displayReceiveAmountStep2 = document.getElementById('displayReceiveAmountStep2');
@@ -525,7 +545,9 @@
                     terms.classList.add('hidden');
                     currentStep = 3;
                     countdownBlock.classList.add('hidden');
-                    countdownTimer.textContent = '15:00,00';
+                    cdMinutes.textContent = '15';
+                    cdSeconds.textContent = '00';
+                    cdCentis.textContent = '00';
     
                     pollingInterval = setInterval(async () => {
                         if (!orderId) {
@@ -584,7 +606,9 @@
                         terms.classList.add('hidden');
                         currentStep = 3;
                         countdownBlock.classList.add('hidden');
-                        countdownTimer.textContent = '15:00,00';
+                        cdMinutes.textContent = '15';
+                        cdSeconds.textContent = '00';
+                        cdCentis.textContent = '00';
                     } else {
                         alert("Erro ao processar pedido.");
                     }
@@ -603,7 +627,13 @@
                 toggleContainer.classList.remove('hidden');
                 terms.classList.remove('hidden');
                 countdownBlock.classList.add('hidden');
-                countdownTimer.textContent = '15:00,00';
+                cdMinutes.textContent = '15';
+                cdSeconds.textContent = '00';
+                cdCentis.textContent = '00';
+                paymentSummary.classList.remove('hidden');
+                sellDepositBlock.classList.add('hidden');
+                qrCodeImg.classList.add('hidden');
+                confirmBtn.classList.remove('hidden');
                 if (countdownInterval) {
                     clearInterval(countdownInterval);
                     countdownInterval = null;
@@ -714,11 +744,18 @@
             }
             const endTime = Date.now() + 15 * 60 * 1000;
             countdownBlock.classList.remove('hidden');
+            paymentSummary.classList.add('hidden');
+            sellDepositBlock.classList.add('hidden');
+            qrCodeImg.classList.add('hidden');
+            confirmBtn.classList.add('hidden');
+            statusMessage.textContent = 'Aguardando confirmação na nossa carteira...';
 
             const updateCountdown = () => {
                 const remaining = endTime - Date.now();
                 if (remaining <= 0) {
-                    countdownTimer.textContent = '00:00,00';
+                    cdMinutes.textContent = '00';
+                    cdSeconds.textContent = '00';
+                    cdCentis.textContent = '00';
                     clearInterval(countdownInterval);
                     countdownInterval = null;
                     return;
@@ -728,7 +765,9 @@
                 const minutes = String(Math.floor(totalSec / 60)).padStart(2, '0');
                 const seconds = String(totalSec % 60).padStart(2, '0');
                 const centis = String(Math.floor((totalMs % 1000) / 10)).padStart(2, '0');
-                countdownTimer.textContent = `${minutes}:${seconds},${centis}`;
+                cdMinutes.textContent = minutes;
+                cdSeconds.textContent = seconds;
+                cdCentis.textContent = centis;
             };
 
             updateCountdown();
