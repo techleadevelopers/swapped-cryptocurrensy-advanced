@@ -1,7 +1,7 @@
-# NexSwap — On/Off-Ramp Cripto ↔ BRL com UX Instantânea
+# Swappy financial — On/Off-Ramp Cripto ↔ BRL com UX Instantânea
 
 ## Visão Executiva
-NexSwap é uma stack de on/off-ramp focada em “Sell” (usuário envia cripto, recebe PIX). Mantemos um backend enxuto (Express) endurecido e preparado para evoluir com workers e filas: API pública para criação/consulta de ordens, worker on-chain para detectar depósitos e worker PIX para liquidar payouts. Tudo validado com schema de ambiente, limites configuráveis e cache de preço.
+Swappy financial é uma stack de on/off-ramp focada em “Sell” (usuário envia cripto, recebe PIX). Mantemos um backend enxuto (Express) endurecido e preparado para evoluir com workers e filas: API pública para criação/consulta de ordens, worker on-chain para detectar depósitos e worker PIX para liquidar payouts. Tudo validado com schema de ambiente, limites configuráveis e cache de preço.
 
 ## Capabilidades Principais
 - **Fluxo Sell seguro**: status inicial `aguardando_deposito`, cotação travada com TTL, validação de endereço (BTC/ETH) e limites min/max configuráveis.
