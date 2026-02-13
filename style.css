@@ -504,10 +504,10 @@ body::before {
 
 .wallet-input input {
   width: 100%;
-  padding: 6px 9px;
+  padding: 14px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 1.05rem;
 }
 
 .wallet-input input:focus {
@@ -783,13 +783,42 @@ body::before {
 
 /* Estilos para a seção de informações de pagamento (Ultra Moderno e Robusto - Ajustado) */
 .payment-info {
-  margin-top: 30px;
-  padding: 30px;
-  border-radius: 15px;
-  background: linear-gradient(145deg, #e0e0e0, #ffffff);
-  box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
-  text-align: center;
-  position: relative; /* Para posicionar o texto "By buying..." corretamente */
+  margin-top: 20px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  position: static;
+}
+
+.payment-summary-text {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.payment-summary-text strong {
+  color: #6c63ff;
+  font-weight: 600;
+}
+
+.countdown {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #555;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#countdownTimer {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  color: var(--primary-color);
 }
 
 .payment-info h3 {
@@ -800,13 +829,35 @@ body::before {
   letter-spacing: 0.5px;
 }
 
-.qr-code-container {
-  background-color: #fff;
+.sell-deposit,
+#sellDepositBlock {
+  margin-top: 12px;
+  text-align: left;
+}
+
+#sellDepositBlock label {
+  display: block;
+  font-size: 0.9rem;
+  margin: 6px 0 4px;
+}
+
+#sellDepositBlock select {
+  width: 100%;
+  padding: 12px 14px;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 5px 5px 10px #d1d1d1, -5px -5px 10px #fff;
+  border: 1px solid var(--border-color);
+  background: var(--hover-color);
+  font-size: 1rem;
+  appearance: none;
+}
+
+.qr-code-container {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
   display: inline-block;
-  margin-bottom: 25px;
+  margin-bottom: 0;
 }
 
 .qr-code-image {
@@ -826,23 +877,45 @@ body::before {
 
 
 .confirm-payment-btn {
-  background-color: #6c63ff; /* Cor roxa primária */
-  color: #fff;
+  width: 100%;
+  padding: 16px;
   border: none;
-  border-radius: 10px;
-  padding: 15px 30px;
-  font-size: 1.1em;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #7B4BFF, #6c63ff);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  margin-top: 25px;
-  box-shadow: 3px 3px 6px #b3b1b1, -3px -3px 6px #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
+  margin-top: 16px;
+}
+
+.confirm-payment-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: buttonGlow 2s infinite;
 }
 
 .confirm-payment-btn:hover {
-  background-color: #564bff;
-  box-shadow: 5px 5px 10px #b3b1b1, -5px -5px 10px #fff;
+  opacity: 0.9;
 }
-
 .payment-terms-below {
   color: #777;
   font-size: 0.9em;
