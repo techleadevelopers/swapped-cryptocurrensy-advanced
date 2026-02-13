@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Simulando banco de dados em memória
-const orders = {};
+const ordersMemory = {}; // fallback apenas para demo
 
 const provider = new JsonRpcProvider(config.rpcUrl);
 const wallet = new Wallet(config.hotWalletKey, provider);
@@ -78,7 +78,8 @@ app.post('/api/order', async (req, res) => {
     qrCodeUrl: '/images/qrcode.png',
   };
 
-  orders[id] = order;
+  ordersMemory[id] = order;
+  await createOrder(order);
 
   publish('order.created', order);
 
@@ -94,15 +95,21 @@ app.post('/api/order', async (req, res) => {
 
 // Consultar status da ordem
 app.get('/api/order/:id', (req, res) => {
-  const order = orders[req.params.id];
-  if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
-  res.json(order);
+  getOrder(req.params.id)
+    .then(order => {
+      if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
+      res.json(order);
+    })
+    .catch(err => {
+      console.error('Erro ao buscar ordem:', err);
+      res.status(500).json({ error: 'Erro ao buscar ordem' });
+    });
 });
 
 // Simulador de confirmação do pagamento (como se fosse um webhook do PIX)
 // Agora exige um header de autenticação simples para evitar abuso.
 app.post('/api/order/:id/confirm', async (req, res) => {
-  const order = orders[req.params.id];
+  const order = await getOrder(req.params.id);
   if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
   if (config.webhookSecret && req.headers['x-webhook-secret'] !== config.webhookSecret) {
     return res.status(401).json({ error: 'Webhook não autorizado' });
@@ -121,10 +128,12 @@ app.post('/api/order/:id/confirm', async (req, res) => {
 
     order.status = 'concluída';
     order.txHash = tx.hash;
+    await updateOrderStatus(order.id, 'concluída', { txHash: tx.hash });
     console.log(`Token enviado para ${order.address}, txHash: ${tx.hash}`);
   } catch (err) {
     order.status = 'erro';
     order.error = err.message;
+    await updateOrderStatus(order.id, 'erro', { error: err.message });
     console.error('Erro ao enviar token:', err);
   }
 
@@ -133,6 +142,9 @@ app.post('/api/order/:id/confirm', async (req, res) => {
 
 app.use('/images', express.static('images'));
 
-app.listen(3000, () => console.log('Server on http://localhost:3000'));
+(async () => {
+  await initSchema();
+  app.listen(3000, () => console.log('Server on http://localhost:3000'));
+})();
 
 
