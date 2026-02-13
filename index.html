@@ -19,20 +19,20 @@
 
         /* Estilos para a seção de informações de pagamento (Ultra Moderno e Robusto) */
         .payment-info {
-            margin-top: 30px;
-            padding: 30px;
-            border-radius: 15px;
-            background: linear-gradient(145deg, #e0e0e0, #ffffff);
-            box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
-            text-align: center;
+            margin-top: 20px;
+            padding: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            text-align: left;
         }
 
         .payment-info h3 {
             color: #444;
-            margin-bottom: 20px;
-            font-size: 1.8em;
+            margin-bottom: 16px;
+            font-size: 1.4em;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.2px;
         }
 
         .qr-code-container {
@@ -249,15 +249,30 @@
             </div>
 
             <div class="payment-info hidden" id="paymentInfoSection">
-                <p class="payment-summary-text">
+                <p class="payment-summary-text" id="paymentSummary">
                     <strong>Amount:</strong> <span id="paymentAmount"></span><br>
                     <strong>Payment Method:</strong> <span id="paymentMethod"></span><br>
-                    <strong>Wallet:</strong> <span id="paymentWallet"></span><br>
+                    <span id="walletRow"><strong>Wallet:</strong> <span id="paymentWallet"></span><br></span>
                     <strong>Chave PIX:</strong> <span id="pixKey"></span>
                 </p>
+                <div id="sellDepositBlock" class="hidden">
+                    <label for="sellDepositAddressInput">Endereço para enviar</label>
+                    <div class="input-group">
+                        <input type="text" id="sellDepositAddressInput" readonly />
+                    </div>
+                    <label for="sellNetwork">Rede</label>
+                    <select id="sellNetwork">
+                        <option value="btc">Bitcoin</option>
+                        <option value="erc20">Ethereum (ERC20)</option>
+                        <option value="trc20">Tron (TRC20)</option>
+                    </select>
+                </div>
                 <img id="qrCodeImg" src="" alt="QR Code PIX" />
+                <div id="countdownBlock" class="hidden countdown">
+                    Tempo para pagamento: <span id="countdownTimer">15:00,00</span>
+                </div>
                 <div id="statusMessage"></div>
-                <button class="confirm-payment-btn">Confirm Payment</button>
+                <button class="confirm-payment-btn" id="confirmPaymentBtn">Confirm Payment</button>
             </div>
             
             
@@ -278,6 +293,7 @@
         const paymentAmountDisplay = document.getElementById('paymentAmount');
         const paymentMethodDisplay = document.getElementById('paymentMethod');
         const paymentWalletDisplay = document.getElementById('paymentWallet');
+        const walletRow = document.getElementById('walletRow');
         const pixKeyDisplay = document.getElementById('pixKey');
         const qrCodeImg = document.getElementById('qrCodeImg');
         const statusMessage = document.getElementById('statusMessage');
@@ -286,6 +302,12 @@
         const sellInfo = document.getElementById('sellInfo');
         const pixCpfInput = document.getElementById('pixCpf');
         const pixPhoneInput = document.getElementById('pixPhone');
+        const sellDepositBlock = document.getElementById('sellDepositBlock');
+        const sellDepositInput = document.getElementById('sellDepositAddressInput');
+        const sellNetworkSelect = document.getElementById('sellNetwork');
+        const confirmBtn = document.querySelector('.confirm-payment-btn');
+        const countdownBlock = document.getElementById('countdownBlock');
+        const countdownTimer = document.getElementById('countdownTimer');
     
         const displayPayAmountStep2 = document.getElementById('displayPayAmountStep2');
         const displayReceiveAmountStep2 = document.getElementById('displayReceiveAmountStep2');
@@ -293,9 +315,15 @@
         let selectedMethod = null;
         let orderId = null;
         let pollingInterval = null;
+        let countdownInterval = null;
         let currentStep = 1;
         let action = 'buy';
         const SELL_DEPOSIT_ADDRESS = 'bc1qexampledepositaddress0000000';
+        const SELL_DEPOSIT_ADDRESSES = {
+            btc: 'bc1qexampledepositaddress0000000',
+            erc20: '0xExampleERC20Deposit0000000000000000',
+            trc20: 'TAExampleTRC20Deposit0000000000'
+        };
     
         step2.classList.add('hidden');
         paymentInfoSection.classList.add('hidden');
@@ -456,16 +484,14 @@
     
                     if (!res.ok) {
                         const error = await res.json();
-                        alert(`Erro ao criar ordem: ${error.message || 'Erro inesperado.'}`);
-                        return;
+                        throw new Error(error.message || 'Erro inesperado.');
                     }
     
                     const data = await res.json();
                     orderId = data.orderId;
     
-                    if (!data.orderId) {
-                        alert("Erro: Dados incompletos recebidos.");
-                        return;
+                    if (!orderId) {
+                        throw new Error('Dados incompletos recebidos.');
                     }
 
                     if (action === 'buy') {
@@ -474,12 +500,21 @@
                         paymentWalletDisplay.textContent = wallet;
                         pixKeyDisplay.textContent = data.pixKey || '—';
                         qrCodeImg.src = data.qrCodeUrl || '';
+                        qrCodeImg.classList.remove('hidden');
+                        sellDepositBlock.classList.add('hidden');
+                        walletRow.classList.remove('hidden');
                     } else {
                         paymentAmountDisplay.textContent = `${amountBTC} BTC (${amountBRL} BRL)`;
                         paymentMethodDisplay.textContent = 'PIX';
-                        paymentWalletDisplay.textContent = `Envie o valor em cripto para nossa carteira (BTC): ${SELL_DEPOSIT_ADDRESS}`;
+                        const selectedNetwork = sellNetworkSelect.value;
+                        const depositAddress = SELL_DEPOSIT_ADDRESSES[selectedNetwork] || SELL_DEPOSIT_ADDRESS;
+                        paymentWalletDisplay.textContent = '';
                         pixKeyDisplay.textContent = `${pixCpfInput.value.trim()} / ${pixPhoneInput.value.trim()}`;
-                        qrCodeImg.src = data.qrCodeUrl || '';
+                        sellDepositInput.value = depositAddress;
+                        sellDepositBlock.classList.remove('hidden');
+                        qrCodeImg.classList.add('hidden'); // não exibimos QR em sell
+                        qrCodeImg.src = '';
+                        walletRow.classList.add('hidden');
                     }
     
                     paymentInfoSection.classList.remove('hidden');
@@ -489,6 +524,8 @@
                     toggleContainer.classList.add('hidden');
                     terms.classList.add('hidden');
                     currentStep = 3;
+                    countdownBlock.classList.add('hidden');
+                    countdownTimer.textContent = '15:00,00';
     
                     pollingInterval = setInterval(async () => {
                         if (!orderId) {
@@ -523,8 +560,34 @@
                     }, 5000);
     
                 } catch (err) {
-                    alert("Erro ao processar pedido.");
                     console.error("Erro ao criar ordem:", err);
+                    // Para SELL, seguimos para o passo final mesmo que o backend falhe
+                    if (action === 'sell') {
+                        const selectedNetwork = sellNetworkSelect.value;
+                        const depositAddress = SELL_DEPOSIT_ADDRESSES[selectedNetwork] || SELL_DEPOSIT_ADDRESS;
+
+                        paymentAmountDisplay.textContent = `${amountBTC || 0} BTC (${amountBRL || 0} BRL)`;
+                        paymentMethodDisplay.textContent = 'PIX';
+                        paymentWalletDisplay.textContent = '';
+                        pixKeyDisplay.textContent = `${pixCpfInput.value.trim()} / ${pixPhoneInput.value.trim()}`;
+                        sellDepositInput.value = depositAddress;
+                        sellDepositBlock.classList.remove('hidden');
+                        qrCodeImg.classList.add('hidden');
+                        qrCodeImg.src = '';
+                        walletRow.classList.add('hidden');
+
+                        paymentInfoSection.classList.remove('hidden');
+                        inputSection.classList.add('hidden');
+                        step2.classList.add('hidden');
+                        continueBtn.classList.add('hidden');
+                        toggleContainer.classList.add('hidden');
+                        terms.classList.add('hidden');
+                        currentStep = 3;
+                        countdownBlock.classList.add('hidden');
+                        countdownTimer.textContent = '15:00,00';
+                    } else {
+                        alert("Erro ao processar pedido.");
+                    }
                 }
             }
         });
@@ -539,6 +602,12 @@
                 continueBtn.classList.remove('hidden');
                 toggleContainer.classList.remove('hidden');
                 terms.classList.remove('hidden');
+                countdownBlock.classList.add('hidden');
+                countdownTimer.textContent = '15:00,00';
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
 
                 payAmount.value = '';
                 receiveAmount.value = '';
@@ -636,6 +705,35 @@
     
         createCurrencyDropdown('payDropdown', 'payCurrency', 'pay');
         createCurrencyDropdown('receiveDropdown', 'receiveCurrency', 'receive');
+
+        // Countdown 15 min ao clicar em Confirm Payment
+        confirmBtn.addEventListener('click', () => {
+            // evita múltiplos timers
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            const endTime = Date.now() + 15 * 60 * 1000;
+            countdownBlock.classList.remove('hidden');
+
+            const updateCountdown = () => {
+                const remaining = endTime - Date.now();
+                if (remaining <= 0) {
+                    countdownTimer.textContent = '00:00,00';
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    return;
+                }
+                const totalMs = remaining;
+                const totalSec = Math.floor(totalMs / 1000);
+                const minutes = String(Math.floor(totalSec / 60)).padStart(2, '0');
+                const seconds = String(totalSec % 60).padStart(2, '0');
+                const centis = String(Math.floor((totalMs % 1000) / 10)).padStart(2, '0');
+                countdownTimer.textContent = `${minutes}:${seconds},${centis}`;
+            };
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 100);
+        });
     });
     </script>
     
