@@ -168,8 +168,8 @@
               </div>
           
               <div class="exchange-rate">
-                  <span class="rate-text">1 BTC ≈ 250,000 BRL</span>
-                  <div class="loading-spinner hidden"></div>
+                  <span class="rate-text">Carregando cotação...</span>
+                  <div class="loading-spinner"></div>
               </div>
           
               <div class="currency-input">
@@ -195,9 +195,9 @@
                   <p>Receber: <strong id="displayReceiveAmountStep2"></strong></p>
               </div>
               <div class="wallet-input">
-                  <label for="walletAddress">Wallet Address</label>
+                  <label for="walletAddress">Wallet Address (ETH ou BTC)</label>
                   <div class="input-group">
-                      <input type="text" id="walletAddress" placeholder="Enter your wallet address (0x...)" />
+                      <input type="text" id="walletAddress" placeholder="Cole um endereço 0x... ou bc1..." />
                   </div>
               </div>
 
@@ -255,6 +255,7 @@
         const inputSection = document.getElementById('inputSection');
         const toggleContainer = document.querySelector('.toggle-container');
         const rateText = document.querySelector('.rate-text');
+        const rateSpinner = document.querySelector('.loading-spinner');
         const payAmount = document.getElementById('payAmount');
         const receiveAmount = document.getElementById('receiveAmount');
         const paymentMethods = document.querySelectorAll('.payment-method');
@@ -291,6 +292,7 @@
             })
             .then(data => {
                 btcToBrl = data.brl;
+                rateSpinner.classList.add('hidden');
                 rateText.textContent = `1 BTC ≈ ${btcToBrl.toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
@@ -308,6 +310,7 @@
             })
             .catch(err => {
                 console.error("Erro ao buscar a taxa BTC:", err);
+                rateSpinner.classList.add('hidden');
                 rateText.textContent = "Erro ao buscar a taxa 😓";
             });
     
@@ -351,9 +354,11 @@
                     alert("Digite o endereço da sua carteira.");
                     return;
                 }
-    
-                if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-                    alert("Endereço de carteira inválido.");
+
+                const ethLike = /^0x[a-fA-F0-9]{40}$/;
+                const btcLike = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/;
+                if (!ethLike.test(wallet) && !btcLike.test(wallet)) {
+                    alert("Endereço inválido. Use um endereço Ethereum (0x...) ou BTC (bc1/1/3...).");
                     return;
                 }
     
@@ -411,22 +416,27 @@
                             clearInterval(pollingInterval);
                             return;
                         }
-    
+
                         try {
                             const statusRes = await fetch(`http://localhost:3000/api/order/${orderId}`);
                             if (!statusRes.ok) return;
-    
+
                             const statusData = await statusRes.json();
                             if (statusData.status === 'concluída') {
                                 clearInterval(pollingInterval);
                                 statusMessage.innerHTML = `✅ Pagamento confirmado!<br>Hash da transação: <code>${statusData.txHash || 'N/A'}</code>`;
+                            } else if (statusData.status === 'pago') {
+                                statusMessage.innerHTML = `⏳ Depósito confirmado. Aguardando liquidação on-chain...`;
                             } else if (statusData.status === 'cancelada' || statusData.status === 'expirada') {
                                 clearInterval(pollingInterval);
                                 statusMessage.innerHTML = `❌ Pagamento ${statusData.status}. Crie uma nova ordem.`;
-    
+
                                 payAmount.value = '';
                                 receiveAmount.value = '';
                                 document.getElementById('walletAddress').value = '';
+                            } else if (statusData.status === 'erro') {
+                                clearInterval(pollingInterval);
+                                statusMessage.innerHTML = `⚠️ Erro ao processar: ${statusData.error || 'desconhecido'}`;
                             }
                         } catch (pollingErr) {
                             console.error("Erro durante polling:", pollingErr);
