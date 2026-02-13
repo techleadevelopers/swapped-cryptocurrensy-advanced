@@ -10,6 +10,7 @@ Swappy financial é uma stack de on/off-ramp focada em “Sell” (usuário envi
 - **Filas / eventos (stub)**: event bus em memória já publica `order.created` → `onchain.detected` → `payout.settled`, pronto para migrar para SQS/PubSub/Kafka.
 - **Persistência preparada**: PostgreSQL com tabelas `orders`, `order_events`, `payouts` (schema incluso), fallback in-memory apenas para demo.
 - **Workers stubs**: on-chain, payout e price-cache prontos para plugar lógica real.
+- **Hardening inicial**: Helmet, rate limit geral e por rota de criação, CORS restrito, logger Pino; endpoints de depósito/payout com auditoria em DB.
 
 ## Arquitetura de Alto Nível
 - **Frontend**: HTML/CSS/JS (Vite ou servidor estático).
