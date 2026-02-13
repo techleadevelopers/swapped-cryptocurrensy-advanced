@@ -1,12 +1,15 @@
 import { subscribe, publish } from '../queue.js';
+import { updateOrderStatus } from '../db.js';
 
-// Placeholder: integra provedor PIX real
+// Placeholder: simula payout PIX logo após pedido
 export function startPayoutWorker() {
-  subscribe('onchain.detected', (evt) => {
-    // Em produção: chamar provedor PIX, validar resposta, assinar webhook
-    publish('payout.settled', {
-      orderId: evt.orderId,
-      pixStatus: 'simulado'
-    });
+  subscribe('payout.requested', async (evt) => {
+    setTimeout(async () => {
+      await updateOrderStatus(evt.orderId, 'concluída', { txHash: `pix-sim-${evt.orderId}` });
+      publish('payout.settled', {
+        orderId: evt.orderId,
+        pixStatus: 'concluída'
+      });
+    }, 3000);
   });
 }
