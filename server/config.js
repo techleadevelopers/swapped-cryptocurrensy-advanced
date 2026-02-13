@@ -13,7 +13,11 @@ const EnvSchema = z.object({
   PRICE_TTL_SEC: z.coerce.number().positive().default(60 * 5),
   RATE_LOCK_SEC: z.coerce.number().positive().default(600),
   DATABASE_URL: z.string().optional(),
-  DATABASE_SSL: z.string().optional()
+  DATABASE_SSL: z.string().optional(),
+  ORDER_MIN_BRL: z.coerce.number().positive().default(10),
+  ORDER_MAX_BRL: z.coerce.number().positive().default(100000),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(60_000),
+  RATE_LIMIT_MAX: z.coerce.number().positive().default(100)
 });
 
 const env = EnvSchema.parse(process.env);
@@ -28,5 +32,9 @@ export const config = {
   kmsSignerUrl: env.KMS_SIGNER_URL,
   priceTtlSec: env.PRICE_TTL_SEC,
   rateLockSec: env.RATE_LOCK_SEC,
-  databaseUrl: env.DATABASE_URL
+  databaseUrl: env.DATABASE_URL,
+  orderMinBrl: env.ORDER_MIN_BRL,
+  orderMaxBrl: env.ORDER_MAX_BRL,
+  rateLimitWindowMs: env.RATE_LIMIT_WINDOW_MS,
+  rateLimitMax: env.RATE_LIMIT_MAX
 };
