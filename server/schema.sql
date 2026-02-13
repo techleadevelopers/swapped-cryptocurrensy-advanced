@@ -5,11 +5,17 @@ CREATE TABLE IF NOT EXISTS orders (
   amount_brl NUMERIC(18,2) NOT NULL,
   btc_amount NUMERIC(28,8) NOT NULL,
   address TEXT NOT NULL,
+  asset VARCHAR(16) NOT NULL DEFAULT 'USDT',
+  network VARCHAR(32) NOT NULL DEFAULT 'ERC20',
   rate_locked NUMERIC(28,8) NOT NULL,
   rate_lock_expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   tx_hash TEXT,
-  error TEXT
+  error TEXT,
+  deposit_tx TEXT,
+  deposit_amount NUMERIC(28,8),
+  pix_cpf TEXT,
+  pix_phone TEXT
 );
 
 -- Eventos para auditoria e reconciliação
