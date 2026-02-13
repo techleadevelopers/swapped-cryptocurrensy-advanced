@@ -50,6 +50,7 @@ app.get('/api/price', async (_req, res) => {
     );
     res.json({ brl: data.tether.brl });
   } catch (err) {
+    logger.error({ err }, 'Erro ao obter preço');
     res.status(500).json({ error: 'API error' });
   }
 });
@@ -214,6 +215,18 @@ app.post('/api/pix/webhook', express.raw({ type: '*/*' }), (req, res) => {
   if (signature !== hmac) return res.status(401).json({ error: 'Assinatura inválida' });
   // Em produção: parse payload, localizar ordem, registrar evento/payout
   res.json({ received: true });
+});
+
+// Health / readiness
+app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/readyz', async (_req, res) => {
+  try {
+    const order = await getOrder('00000000-0000-0000-0000-000000000000');
+    res.json({ ok: true, db: true });
+  } catch (err) {
+    logger.error({ err }, 'Readiness check failed');
+    res.status(500).json({ ok: false, db: false });
+  }
 });
 // SSE para status de ordem (básico)
 app.get('/api/order/:id/stream', async (req, res) => {
