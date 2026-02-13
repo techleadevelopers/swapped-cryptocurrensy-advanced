@@ -3,12 +3,15 @@ import axios from 'axios';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { httpLogger, logger } from './logger.js';
 import { v4 as uuidv4 } from 'uuid';
-import { ethers, Wallet, Contract, JsonRpcProvider, parseUnits } from 'ethers';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { config } from './config.js';
 import { publish } from './queue.js';
-import { getCachedPrice } from './workers/priceWorker.js';
+import { getCachedPrice, startPriceWorker } from './workers/priceWorker.js';
+import { startOnchainWorker } from './workers/onchainWorker.js';
+import { startPayoutWorker } from './workers/payoutWorker.js';
 import { initSchema, createOrder, getOrder, updateOrderStatus } from './db.js';
 
 const app = express();
@@ -19,19 +22,17 @@ app.use(rateLimit({
 }));
 app.use(cors());
 app.use(express.json());
+app.use(httpLogger);
 
-// Simulando banco de dados em memória
-const ordersMemory = {}; // fallback apenas para demo
-
-const provider = new JsonRpcProvider(config.rpcUrl);
-const wallet = new Wallet(config.hotWalletKey, provider);
-
-const tokenAbi = ['function transfer(address to, uint256 amount) public returns (bool)'];
-const tokenContract = new Contract(config.tokenAddress, tokenAbi, wallet);
+const orderLimiter = rateLimit({
+  windowMs: config.orderRateLimitWindowMs,
+  max: config.orderRateLimitMax,
+  message: 'Too many orders created, try again later'
+});
 
 // CORS restrito (lista separada por vírgula no .env)
 const allowed = config.allowedOrigins.includes('*')
-  ? ['*']
+  ? ['http://localhost:5173']
   : config.allowedOrigins;
 app.use(cors({
   origin: (origin, cb) => {
@@ -45,16 +46,16 @@ app.use(cors({
 app.get('/api/price', async (_req, res) => {
   try {
     const { data } = await axios.get(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=brl,usd'
+      'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=brl,usd'
     );
-    res.json({ brl: data.bitcoin.brl });
+    res.json({ brl: data.tether.brl });
   } catch (err) {
     res.status(500).json({ error: 'API error' });
   }
 });
 
 // Criar uma nova ordem de compra com PIX
-app.post('/api/order', async (req, res) => {
+app.post('/api/order', orderLimiter, async (req, res) => {
   const OrderSchema = z.object({
     amountBRL: z.number().positive(),
     address: z.string().min(1),
@@ -82,7 +83,7 @@ app.post('/api/order', async (req, res) => {
   }
 
   const btcRate = await getCachedPrice();
-  const btcAmount = amountBRL / btcRate;
+  const btcAmount = amountBRL / btcRate; // aqui representa USDT->BRL (mantido nome leg legado)
   const id = uuidv4();
 
   const order = {
@@ -102,7 +103,6 @@ app.post('/api/order', async (req, res) => {
     pixPhone
   };
 
-  ordersMemory[id] = order;
   await createOrder(order);
 
   publish('order.created', order);
@@ -125,7 +125,7 @@ app.get('/api/order/:id', (req, res) => {
       res.json(order);
     })
     .catch(err => {
-      console.error('Erro ao buscar ordem:', err);
+      logger.error({ err }, 'Erro ao buscar ordem');
       res.status(500).json({ error: 'Erro ao buscar ordem' });
     });
 });
@@ -157,7 +157,11 @@ app.use('/images', express.static('images'));
 
 (async () => {
   await initSchema();
-  app.listen(3000, () => console.log('Server on http://localhost:3000'));
+  startPriceWorker();
+  startOnchainWorker();
+  startPayoutWorker();
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => logger.info({ port }, 'Server started'));
 })();
 
 
@@ -200,4 +204,38 @@ app.post('/api/order/:id/payout', async (req, res) => {
   }
   publish('payout.settled', { orderId: order.id, providerId: parsed.data.providerId, status: parsed.data.status });
   res.json({ ok: true });
+});
+
+// Webhook PIX (PagBank) stub com verificação HMAC
+app.post('/api/pix/webhook', express.raw({ type: '*/*' }), (req, res) => {
+  if (!config.webhookSecret) return res.status(400).json({ error: 'WEBHOOK_SECRET não configurado' });
+  const signature = req.headers['x-pagbank-signature'];
+  const hmac = crypto.createHmac('sha256', config.webhookSecret).update(req.body).digest('hex');
+  if (signature !== hmac) return res.status(401).json({ error: 'Assinatura inválida' });
+  // Em produção: parse payload, localizar ordem, registrar evento/payout
+  res.json({ received: true });
+});
+// SSE para status de ordem (básico)
+app.get('/api/order/:id/stream', async (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive'
+  });
+  res.flushHeaders();
+
+  let lastStatus = null;
+  const interval = setInterval(async () => {
+    const order = await getOrder(req.params.id);
+    if (!order) return;
+    if (order.status !== lastStatus) {
+      lastStatus = order.status;
+      res.write(`data: ${JSON.stringify({ status: order.status, txHash: order.tx_hash || order.txHash })}\n\n`);
+    }
+  }, 2000);
+
+  req.on('close', () => {
+    clearInterval(interval);
+    res.end();
+  });
 });
