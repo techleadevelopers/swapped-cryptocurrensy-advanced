@@ -447,6 +447,11 @@ body::before {
   font-weight: 600; /* Deixa os valores em negrito */
   
 }
+.wallet-input label {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  display: inline-block;
+}
 
 .input-group {
   position: relative; /* Permite o posicionamento absoluto do dropdown */
@@ -499,11 +504,10 @@ body::before {
 
 .wallet-input input {
   width: 100%;
-  padding: 12px;
+  padding: 6px 9px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 10px;
-  
+  font-size: 0.85rem;
 }
 
 .wallet-input input:focus {
