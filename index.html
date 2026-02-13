@@ -189,19 +189,34 @@
           </div>
           
 
-            <div class="step-2" id="step2">
+          <div class="step-2" id="step2">
               <div class="order-summary-step2">
                   <p>Pagar: <strong id="displayPayAmountStep2"></strong></p>
                   <p>Receber: <strong id="displayReceiveAmountStep2"></strong></p>
               </div>
-              <div class="wallet-input">
+              <div class="wallet-input" id="walletGroup">
                   <label for="walletAddress">Wallet Address (ETH ou BTC)</label>
                   <div class="input-group">
                       <input type="text" id="walletAddress" placeholder="Cole um endereço 0x... ou bc1..." />
                   </div>
               </div>
 
-              <div class="payment-methods">
+              <div class="sell-info hidden" id="sellInfo">
+                  <div class="wallet-input">
+                      <label for="pixCpf">Seu CPF (para PIX)</label>
+                      <div class="input-group">
+                          <input type="text" id="pixCpf" placeholder="000.000.000-00" />
+                      </div>
+                  </div>
+                  <div class="wallet-input">
+                      <label for="pixPhone">Chave (PIX)</label>
+                      <div class="input-group">
+                          <input type="text" id="pixPhone" placeholder="(11) 99999-9999" />
+                      </div>
+                  </div>
+              </div>
+
+              <div class="payment-methods" id="paymentMethodsSection">
                   <h3>Choose payment method</h3>
                   <div class="methods-grid">
                       <button class="payment-method" data-method="pix">
@@ -267,6 +282,10 @@
         const qrCodeImg = document.getElementById('qrCodeImg');
         const statusMessage = document.getElementById('statusMessage');
         const terms = document.querySelector('.terms');
+        const walletGroup = document.getElementById('walletGroup');
+        const sellInfo = document.getElementById('sellInfo');
+        const pixCpfInput = document.getElementById('pixCpf');
+        const pixPhoneInput = document.getElementById('pixPhone');
     
         const displayPayAmountStep2 = document.getElementById('displayPayAmountStep2');
         const displayReceiveAmountStep2 = document.getElementById('displayReceiveAmountStep2');
@@ -275,6 +294,8 @@
         let orderId = null;
         let pollingInterval = null;
         let currentStep = 1;
+        let action = 'buy';
+        const SELL_DEPOSIT_ADDRESS = 'bc1qexampledepositaddress0000000';
     
         step2.classList.add('hidden');
         paymentInfoSection.classList.add('hidden');
@@ -285,26 +306,48 @@
     
         let btcToBrl = 0;
     
-        fetch("http://localhost:3000/api/price")
-            .then(res => {
+        const API_BASE = window.API_BASE || 'http://localhost:3000';
+
+        async function loadRate() {
+            try {
+                const res = await fetch(`${API_BASE}/api/price`);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                btcToBrl = data.brl;
+                const data = await res.json();
+                return data.brl;
+            } catch (err) {
+                // Fallback direto na CoinGecko para evitar bloqueio local
+                try {
+                    const cg = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl');
+                    if (!cg.ok) throw new Error(`CoinGecko HTTP ${cg.status}`);
+                    const data = await cg.json();
+                    return data.bitcoin.brl;
+                } catch (e2) {
+                    throw err; // mantém erro original se fallback falhar
+                }
+            }
+        }
+
+        loadRate()
+            .then(rate => {
+                btcToBrl = rate;
                 rateSpinner.classList.add('hidden');
                 rateText.textContent = `1 BTC ≈ ${btcToBrl.toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
                 })}`;
-    
+
                 payAmount.addEventListener('input', () => {
-                    const brlValue = parseFloat(payAmount.value);
-                    if (!isNaN(brlValue) && brlValue > 0 && btcToBrl) {
-                        const btcValue = brlValue / btcToBrl;
+                    const inputValue = parseFloat(payAmount.value);
+                    if (isNaN(inputValue) || inputValue <= 0 || !btcToBrl) {
+                        receiveAmount.value = '';
+                        return;
+                    }
+                    if (action === 'buy') {
+                        const btcValue = inputValue / btcToBrl;
                         receiveAmount.value = btcValue.toFixed(8);
                     } else {
-                        receiveAmount.value = '';
+                        const brlValue = inputValue * btcToBrl;
+                        receiveAmount.value = brlValue.toFixed(2);
                     }
                 });
             })
@@ -327,50 +370,76 @@
             setTimeout(() => continueBtn.disabled = false, 1000);
     
             if (currentStep === 1) {
-                const amountBRL = payAmount.value.trim();
-                const amountBTC = receiveAmount.value.trim();
-    
+                let amountBRL, amountBTC, payLabel, receiveLabel;
+                if (action === 'buy') {
+                    amountBRL = payAmount.value.trim();
+                    amountBTC = receiveAmount.value.trim();
+                    payLabel = `${parseFloat(amountBRL).toFixed(2)} BRL`;
+                    receiveLabel = `${parseFloat(amountBTC).toFixed(6)} BTC`;
+                } else {
+                    amountBTC = payAmount.value.trim();
+                    amountBRL = receiveAmount.value.trim();
+                    payLabel = `${parseFloat(amountBTC).toFixed(6)} BTC`;
+                    receiveLabel = `${parseFloat(amountBRL).toFixed(2)} BRL`;
+                }
+
                 if (!amountBRL || parseFloat(amountBRL) <= 0) {
                     alert("Digite um valor válido.");
                     return;
                 }
-    
+
                 if (!amountBTC || parseFloat(amountBTC) <= 0) {
-                    alert("Erro ao calcular a quantidade de BTC.");
+                    alert("Erro ao calcular os valores.");
                     return;
                 }
-    
-                displayPayAmountStep2.textContent = `${parseFloat(amountBRL).toFixed(2)} BRL`;
-                displayReceiveAmountStep2.textContent = `${parseFloat(amountBTC).toFixed(6)} BTC`;
-    
+
+                displayPayAmountStep2.textContent = payLabel;
+                displayReceiveAmountStep2.textContent = receiveLabel;
+
                 inputSection.classList.add('hidden');
                 step2.classList.remove('hidden');
                 currentStep = 2;
             } else if (currentStep === 2) {
                 const wallet = document.getElementById('walletAddress').value.trim();
                 const selectedMethodElement = document.querySelector('.payment-method.selected');
-    
-                if (!wallet) {
-                    alert("Digite o endereço da sua carteira.");
-                    return;
+
+                if (action === 'buy') {
+                    if (!wallet) {
+                        alert("Digite o endereço da sua carteira.");
+                        return;
+                    }
+                    const ethLike = /^0x[a-fA-F0-9]{40}$/;
+                    const btcLike = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/;
+                    if (!ethLike.test(wallet) && !btcLike.test(wallet)) {
+                        alert("Endereço inválido. Use um endereço Ethereum (0x...) ou BTC (bc1/1/3...).");
+                        return;
+                    }
                 }
 
-                const ethLike = /^0x[a-fA-F0-9]{40}$/;
-                const btcLike = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/;
-                if (!ethLike.test(wallet) && !btcLike.test(wallet)) {
-                    alert("Endereço inválido. Use um endereço Ethereum (0x...) ou BTC (bc1/1/3...).");
-                    return;
+                if (action === 'sell') {
+                    const cpf = pixCpfInput.value.trim();
+                    const phone = pixPhoneInput.value.trim();
+                    if (!cpf || !phone) {
+                        alert("Informe CPF e telefone para receber via PIX.");
+                        return;
+                    }
                 }
-    
-                if (!selectedMethodElement) {
+
+                if (action === 'buy' && !selectedMethodElement) {
                     alert("Selecione um método de pagamento.");
                     return;
                 }
-    
-                const selectedMethod = selectedMethodElement.dataset.method;
-                const amountBRL = payAmount.value.trim();
-                const amountBTC = receiveAmount.value.trim();
-    
+
+                const selectedMethod = action === 'sell' ? 'pix' : selectedMethodElement.dataset.method;
+                let amountBRL, amountBTC;
+                if (action === 'buy') {
+                    amountBRL = payAmount.value.trim();
+                    amountBTC = receiveAmount.value.trim();
+                } else {
+                    amountBTC = payAmount.value.trim();
+                    amountBRL = receiveAmount.value.trim();
+                }
+
                 try {
                     const res = await fetch("http://localhost:3000/api/order", {
                         method: "POST",
@@ -378,8 +447,10 @@
                         body: JSON.stringify({
                             amountBRL: parseFloat(amountBRL),
                             amountBTC: parseFloat(amountBTC),
-                            address: wallet,
-                            paymentMethod: selectedMethod
+                            address: action === 'sell' ? SELL_DEPOSIT_ADDRESS : wallet,
+                            paymentMethod: selectedMethod,
+                            pixCpf: action === 'sell' ? pixCpfInput.value.trim() : undefined,
+                            pixPhone: action === 'sell' ? pixPhoneInput.value.trim() : undefined
                         })
                     });
     
@@ -392,16 +463,24 @@
                     const data = await res.json();
                     orderId = data.orderId;
     
-                    if (!data.orderId || !data.pixKey || !data.qrCodeUrl) {
+                    if (!data.orderId) {
                         alert("Erro: Dados incompletos recebidos.");
                         return;
                     }
-    
-                    paymentAmountDisplay.textContent = `${amountBRL} BRL (${amountBTC} BTC)`;
-                    paymentMethodDisplay.textContent = selectedMethod.toUpperCase();
-                    paymentWalletDisplay.textContent = wallet;
-                    pixKeyDisplay.textContent = data.pixKey;
-                    qrCodeImg.src = data.qrCodeUrl;
+
+                    if (action === 'buy') {
+                        paymentAmountDisplay.textContent = `${amountBRL} BRL (${amountBTC} BTC)`;
+                        paymentMethodDisplay.textContent = selectedMethod.toUpperCase();
+                        paymentWalletDisplay.textContent = wallet;
+                        pixKeyDisplay.textContent = data.pixKey || '—';
+                        qrCodeImg.src = data.qrCodeUrl || '';
+                    } else {
+                        paymentAmountDisplay.textContent = `${amountBTC} BTC (${amountBRL} BRL)`;
+                        paymentMethodDisplay.textContent = 'PIX';
+                        paymentWalletDisplay.textContent = `Envie o valor em cripto para nossa carteira (BTC): ${SELL_DEPOSIT_ADDRESS}`;
+                        pixKeyDisplay.textContent = `${pixCpfInput.value.trim()} / ${pixPhoneInput.value.trim()}`;
+                        qrCodeImg.src = data.qrCodeUrl || '';
+                    }
     
                     paymentInfoSection.classList.remove('hidden');
                     inputSection.classList.add('hidden');
@@ -453,19 +532,20 @@
         document.querySelectorAll('.toggle-btn').forEach(button => {
             button.addEventListener('click', () => {
                 currentStep = 1;
+                action = button.dataset.action;
                 inputSection.classList.remove('hidden');
                 step2.classList.add('hidden');
                 paymentInfoSection.classList.add('hidden');
                 continueBtn.classList.remove('hidden');
                 toggleContainer.classList.remove('hidden');
                 terms.classList.remove('hidden');
-    
+
                 payAmount.value = '';
                 receiveAmount.value = '';
                 document.getElementById('walletAddress').value = '';
                 paymentMethods.forEach(b => b.classList.remove('selected'));
                 selectedMethod = null;
-    
+
                 displayPayAmountStep2.textContent = '';
                 displayReceiveAmountStep2.textContent = '';
                 if (pollingInterval) {
@@ -473,11 +553,46 @@
                     pollingInterval = null;
                 }
                 statusMessage.textContent = '';
-    
+
                 document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
+
+                applyActionUI();
             });
         });
+
+        // Ajusta UI e rótulos conforme Buy/Sell
+        function applyActionUI() {
+            const payCurrencyBtn = document.getElementById('payCurrency');
+            const receiveCurrencyBtn = document.getElementById('receiveCurrency');
+
+            if (action === 'buy') {
+                payCurrencyBtn.querySelector('img').src = "/images/brl.png";
+                payCurrencyBtn.querySelector('span').innerText = "BRL";
+                receiveCurrencyBtn.querySelector('img').src = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png";
+                receiveCurrencyBtn.querySelector('span').innerText = "BTC";
+                payAmount.placeholder = "0.00";
+                receiveAmount.placeholder = "0.00000000";
+                walletGroup.classList.remove('hidden');
+                sellInfo.classList.add('hidden');
+                document.getElementById('paymentMethodsSection').classList.remove('hidden');
+                paymentMethods.forEach(b => b.classList.remove('selected'));
+                selectedMethod = null;
+            } else {
+                payCurrencyBtn.querySelector('img').src = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png";
+                payCurrencyBtn.querySelector('span').innerText = "BTC";
+                receiveCurrencyBtn.querySelector('img').src = "/images/brl.png";
+                receiveCurrencyBtn.querySelector('span').innerText = "BRL";
+                payAmount.placeholder = "0.00000000";
+                receiveAmount.placeholder = "0.00";
+                walletGroup.classList.add('hidden');
+                sellInfo.classList.remove('hidden');
+                document.getElementById('paymentMethodsSection').classList.add('hidden');
+                selectedMethod = 'pix';
+            }
+        }
+
+        applyActionUI();
     
         // CATEGORIZADAS AGORA
         const fiatCurrencies = [
