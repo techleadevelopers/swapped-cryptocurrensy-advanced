@@ -60,13 +60,16 @@ app.post('/api/order', async (req, res) => {
     address: z.string().min(1),
     paymentMethod: z.string().optional(),
     network: z.string().optional(),
+    asset: z.string().optional(),
+    pixCpf: z.string().optional(),
+    pixPhone: z.string().optional(),
   });
 
   const parseResult = OrderSchema.safeParse(req.body);
   if (!parseResult.success) {
     return res.status(400).json({ error: 'Parâmetros inválidos', details: parseResult.error.issues });
   }
-  const { amountBRL, address } = parseResult.data;
+  const { amountBRL, address, network = 'ERC20', asset = 'USDT', pixCpf, pixPhone } = parseResult.data;
 
   if (amountBRL < config.orderMinBrl || amountBRL > config.orderMaxBrl) {
     return res.status(400).json({ error: `Valor fora dos limites (${config.orderMinBrl} - ${config.orderMaxBrl} BRL)` });
@@ -88,11 +91,15 @@ app.post('/api/order', async (req, res) => {
     amountBRL,
     btcAmount,
     address,
+    asset,
+    network,
     rateLocked: btcRate,
     rateLockExpiresAt: new Date(Date.now() + config.rateLockSec * 1000),
     createdAt: new Date(),
     pixKey: 'chavepix@nexswap.com',
     qrCodeUrl: '/images/qrcode.png',
+    pixCpf,
+    pixPhone
   };
 
   ordersMemory[id] = order;
@@ -140,24 +147,9 @@ app.post('/api/order/:id/confirm', async (req, res) => {
     return res.status(400).json({ error: 'Cotação expirada, crie uma nova ordem.' });
   }
 
-  order.status = 'pago';
-
-  try {
-    const amountToSend = parseUnits(order.btcAmount.toFixed(8), Number(config.tokenDecimals));
-    const tx = await tokenContract.transfer(order.address, amountToSend);
-    await tx.wait();
-
-    order.status = 'concluída';
-    order.txHash = tx.hash;
-    await updateOrderStatus(order.id, 'concluída', { txHash: tx.hash });
-    console.log(`Token enviado para ${order.address}, txHash: ${tx.hash}`);
-  } catch (err) {
-    order.status = 'erro';
-    order.error = err.message;
-    await updateOrderStatus(order.id, 'erro', { error: err.message });
-    console.error('Erro ao enviar token:', err);
-  }
-
+  // No off-ramp enviamos PIX; aqui apenas marcamos como concluída (stub).
+  order.status = 'concluída';
+  await updateOrderStatus(order.id, 'concluída', { txHash: order.tx_hash || order.txHash });
   res.json(order);
 });
 
@@ -169,3 +161,43 @@ app.use('/images', express.static('images'));
 })();
 
 
+// Endpoint para registrar depósito detectado (stub: será chamado pelo worker on-chain)
+app.post('/api/order/:id/deposit', async (req, res) => {
+  const DepositSchema = z.object({
+    txHash: z.string().min(3),
+    amount: z.number().positive()
+  });
+  const parsed = DepositSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Payload inválido', details: parsed.error.issues });
+  const order = await getOrder(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
+  if (order.status !== 'aguardando_deposito') {
+    return res.status(400).json({ error: `Status atual não permite depósito: ${order.status}` });
+  }
+  await updateOrderStatus(order.id, 'pago', { depositTx: parsed.data.txHash, depositAmount: parsed.data.amount });
+  publish('onchain.detected', { orderId: order.id, txHash: parsed.data.txHash, amount: parsed.data.amount });
+  res.json({ ok: true });
+});
+
+// Endpoint para registrar payout PIX (stub: será chamado pelo worker payout)
+app.post('/api/order/:id/payout', async (req, res) => {
+  const PayoutSchema = z.object({
+    providerId: z.string().min(1),
+    status: z.enum(['concluída', 'erro']),
+    error: z.string().optional()
+  });
+  const parsed = PayoutSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Payload inválido', details: parsed.error.issues });
+  const order = await getOrder(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
+  if (order.status !== 'pago') {
+    return res.status(400).json({ error: `Status atual não permite payout: ${order.status}` });
+  }
+  if (parsed.data.status === 'concluída') {
+    await updateOrderStatus(order.id, 'concluída', { txHash: parsed.data.providerId });
+  } else {
+    await updateOrderStatus(order.id, 'erro', { error: parsed.data.error || 'payout erro' });
+  }
+  publish('payout.settled', { orderId: order.id, providerId: parsed.data.providerId, status: parsed.data.status });
+  res.json({ ok: true });
+});
