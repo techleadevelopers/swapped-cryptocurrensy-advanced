@@ -20,8 +20,8 @@ export async function initSchema() {
 
 export async function createOrder(order) {
   const text = `
-    INSERT INTO orders (id, status, amount_brl, btc_amount, address, asset, network, rate_locked, rate_lock_expires_at, created_at, pix_cpf, pix_phone)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+    INSERT INTO orders (id, status, amount_brl, btc_amount, address, asset, network, rate_locked, rate_lock_expires_at, created_at, pix_cpf, pix_phone, derivation_index)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     RETURNING *`;
   const values = [
     order.id,
@@ -35,7 +35,8 @@ export async function createOrder(order) {
     order.rateLockExpiresAt,
     order.createdAt,
     order.pixCpf || null,
-    order.pixPhone || null
+    order.pixPhone || null,
+    order.derivationIndex ?? null
   ];
   await pool.query(text, values);
   await addEvent(order.id, 'order.created', { amountBRL: order.amountBRL, btcAmount: order.btcAmount });
@@ -44,6 +45,11 @@ export async function createOrder(order) {
 export async function getOrder(id) {
   const { rows } = await pool.query('SELECT * FROM orders WHERE id = $1', [id]);
   return rows[0] || null;
+}
+
+export async function getPendingOrders() {
+  const { rows } = await pool.query("SELECT * FROM orders WHERE status = 'aguardando_deposito'");
+  return rows;
 }
 
 export async function updateOrderStatus(id, status, extra = {}) {
@@ -69,4 +75,44 @@ export async function addEvent(orderId, type, payload) {
 
 export async function closePool() {
   await pool.end();
+}
+
+export async function nextDerivationIndex() {
+  const { rows } = await pool.query('SELECT COALESCE(MAX(derivation_index), -1) + 1 AS idx FROM orders');
+  return rows[0]?.idx ?? 0;
+}
+
+export async function getCursor(network) {
+  const { rows } = await pool.query('SELECT last_block FROM onchain_cursor WHERE network = $1 LIMIT 1', [network]);
+  return rows[0]?.last_block || null;
+}
+
+export async function saveCursor(network, lastBlock) {
+  await pool.query(
+    `INSERT INTO onchain_cursor (network, last_block) VALUES ($1,$2)
+     ON CONFLICT (network) DO UPDATE SET last_block = EXCLUDED.last_block, updated_at = now()`,
+    [network, lastBlock]
+  );
+}
+
+export async function createSweep(data) {
+  const { rows } = await pool.query(
+    `INSERT INTO sweeps (id, child_index, from_addr, to_addr, amount, status)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'pending')
+     RETURNING *`,
+    [data.childIndex, data.fromAddr, data.toAddr, data.amount]
+  );
+  return rows[0];
+}
+
+export async function listPendingSweeps() {
+  const { rows } = await pool.query("SELECT * FROM sweeps WHERE status = 'pending'");
+  return rows;
+}
+
+export async function markSweep(id, status, txHash = null) {
+  await pool.query(
+    `UPDATE sweeps SET status = $2, tx_hash = COALESCE($3, tx_hash), updated_at = now() WHERE id = $1`,
+    [id, status, txHash]
+  );
 }
