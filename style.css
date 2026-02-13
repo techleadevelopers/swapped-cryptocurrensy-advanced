@@ -17,7 +17,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #2a0845, #6441A5);
+  background: #0A0E27;
   min-height: 100vh;
   padding-top: 80px;
   position: relative;
@@ -195,7 +195,7 @@ body::before {
     linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
   background-size: 50px 50px;
-  opacity: 0.2;
+  opacity: 0.05;
   z-index: -1;
 }
 
@@ -214,6 +214,51 @@ body::before {
   border-radius: 50%;
   background: linear-gradient(45deg, rgba(123, 75, 255, 0.1), rgba(0, 232, 255, 0.1));
   animation: float 20s infinite linear;
+}
+
+/* Partículas flutuantes */
+.floating-particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  display: none; /* efeito desativado */
+}
+
+.floating-particles .particle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  opacity: 0.2;
+  animation: floatAnimation linear infinite;
+  pointer-events: none;
+}
+
+@keyframes floatAnimation {
+  from {
+    transform: translateY(110vh) translateX(var(--x-offset, 0)) rotate(0deg);
+    opacity: 0;
+  }
+  12% { opacity: 0.9; }
+  to {
+    transform: translateY(-20vh) translateX(var(--x-offset, 0)) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+/* Glow de fundo */
+.background-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(123, 63, 228, 0.28) 0%, rgba(10, 14, 39, 0) 55%),
+    radial-gradient(circle at 75% 75%, rgba(64, 130, 255, 0.22) 0%, rgba(10, 14, 39, 0) 60%);
+  filter: blur(90px);
+  display: none; /* efeito desativado */
 }
 
 @keyframes float {
@@ -273,6 +318,19 @@ body::before {
   font-size: 22px;
   font-weight: bold;
   color: white;
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 40px; /* mantém header na mesma altura */
+}
+
+.logo img {
+  position: absolute;
+  top: -22px; /* flutua sem empurrar layout */
+  height: 94px;
+  max-height: 94px;
+  width: auto;
+  object-fit: contain;
 }
 
 .nav-links {
@@ -333,9 +391,7 @@ body::before {
 .hero-section h1 {
   font-size: 64px;
   line-height: 1.2;
-  background: linear-gradient(45deg, #fff, #7B4BFF);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #cec5e0;
   margin-bottom: 30px;
   margin-top:  60px;
 }
@@ -439,6 +495,10 @@ body::before {
 .toggle-btn.active {
   background: var(--primary-color);
   color: white;
+}
+
+.toggle-btn[data-action="sell"].active {
+  background: #0A0E27;
 }
 
 .currency-input,
@@ -825,6 +885,13 @@ body::before {
   color: var(--primary-color);
 }
 
+#statusMessage {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
+}
+
 .countdown-circle {
   width: 180px;
   height: 180px;
@@ -1007,6 +1074,7 @@ body::before {
   .logo {
     margin-bottom: 10px; /* Adiciona espaço abaixo do logo */
     font-size: 20px; /* Reduz o tamanho da fonte do logo */
+    height: 40px;
   }
 
   .nav-links {
@@ -1140,7 +1208,7 @@ body::before {
   /* Ícones de fundo (ajuste para não sobrecarregar telas menores) */
   .btc-icon,
   .wallets-icon {
-    opacity: 0.15; /* Reduz um pouco mais a opacidade */
+    opacity: 0.5; /* Reduz um pouco mais a opacidade */
     /* Outros ajustes de posicionamento se necessário */
   }
   .wallets-icon {
@@ -1291,6 +1359,7 @@ body::before {
 
   .logo {
     margin: 0 auto;
+    height: 40px;
   }
   .nav-content {
     flex-direction: column;
