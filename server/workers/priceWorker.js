@@ -7,9 +7,9 @@ let cache = { price: null, expiresAt: 0 };
 export async function getCachedPrice() {
   const now = Date.now();
   if (cache.price && cache.expiresAt > now) return cache.price;
-  const { data } = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl');
+  const { data } = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=brl');
   cache = {
-    price: data.bitcoin.brl,
+    price: data.tether.brl,
     expiresAt: now + 60_000
   };
   publish('price.updated', cache.price);
