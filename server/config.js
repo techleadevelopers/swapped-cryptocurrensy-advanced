@@ -11,7 +11,9 @@ const EnvSchema = z.object({
   WEBHOOK_SECRET: z.string().optional(),
   KMS_SIGNER_URL: z.string().optional(), // opcional para uso futuro
   PRICE_TTL_SEC: z.coerce.number().positive().default(60 * 5),
-  RATE_LOCK_SEC: z.coerce.number().positive().default(600)
+  RATE_LOCK_SEC: z.coerce.number().positive().default(600),
+  DATABASE_URL: z.string().optional(),
+  DATABASE_SSL: z.string().optional()
 });
 
 const env = EnvSchema.parse(process.env);
@@ -26,4 +28,5 @@ export const config = {
   kmsSignerUrl: env.KMS_SIGNER_URL,
   priceTtlSec: env.PRICE_TTL_SEC,
   rateLockSec: env.RATE_LOCK_SEC,
+  databaseUrl: env.DATABASE_URL
 };
