@@ -1,6 +1,8 @@
 import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import { ethers, Wallet, Contract, JsonRpcProvider, parseUnits } from 'ethers';
 import { z } from 'zod';
@@ -10,6 +12,11 @@ import { getCachedPrice } from './workers/priceWorker.js';
 import { initSchema, createOrder, getOrder, updateOrderStatus } from './db.js';
 
 const app = express();
+app.use(helmet());
+app.use(rateLimit({
+  windowMs: config.rateLimitWindowMs,
+  max: config.rateLimitMax
+}));
 app.use(cors());
 app.use(express.json());
 
@@ -60,6 +67,16 @@ app.post('/api/order', async (req, res) => {
     return res.status(400).json({ error: 'Parâmetros inválidos', details: parseResult.error.issues });
   }
   const { amountBRL, address } = parseResult.data;
+
+  if (amountBRL < config.orderMinBrl || amountBRL > config.orderMaxBrl) {
+    return res.status(400).json({ error: `Valor fora dos limites (${config.orderMinBrl} - ${config.orderMaxBrl} BRL)` });
+  }
+
+  const isEth = /^0x[a-fA-F0-9]{40}$/.test(address);
+  const isBtc = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/i.test(address);
+  if (!isEth && !isBtc) {
+    return res.status(400).json({ error: 'Endereço inválido (BTC bech32/legacy ou Ethereum 0x...)' });
+  }
 
   const btcRate = await getCachedPrice();
   const btcAmount = amountBRL / btcRate;
@@ -117,6 +134,10 @@ app.post('/api/order/:id/confirm', async (req, res) => {
 
   if (order.status !== 'aguardando_deposito') {
     return res.status(400).json({ error: `Status atual não permite confirmação: ${order.status}` });
+  }
+
+  if (new Date(order.rate_lock_expires_at || order.rateLockExpiresAt) < new Date()) {
+    return res.status(400).json({ error: 'Cotação expirada, crie uma nova ordem.' });
   }
 
   order.status = 'pago';
