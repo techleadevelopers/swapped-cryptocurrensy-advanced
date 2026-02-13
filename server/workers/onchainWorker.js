@@ -1,15 +1,18 @@
 import { subscribe, publish } from '../queue.js';
+import { updateOrderStatus } from '../db.js';
 
-// Placeholder: aqui entrarão watchers on-chain reais
-// Consome order.created e simula detecção de depósito
+// Placeholder: simula detecção on-chain após delay
 export function startOnchainWorker() {
-  subscribe('order.created', (order) => {
-    // Em produção: monitorar tx/endereços, validar valor e confirmações
-    // Quando detectado, emitir payout.requested
-    publish('onchain.detected', {
-      orderId: order.id,
-      txHash: 'simulated',
-      amount: order.btcAmount
-    });
+  subscribe('order.created', async (order) => {
+    setTimeout(async () => {
+      const txHash = `simulated-${order.id}`;
+      await updateOrderStatus(order.id, 'pago', { depositTx: txHash, depositAmount: order.btcAmount });
+      publish('onchain.detected', {
+        orderId: order.id,
+        txHash,
+        amount: order.btcAmount
+      });
+      publish('payout.requested', { orderId: order.id });
+    }, 5000);
   });
 }
