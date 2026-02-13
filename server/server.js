@@ -3,7 +3,8 @@ import axios from 'axios';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { ethers, Wallet, Contract, JsonRpcProvider, parseUnits } from 'ethers';
-import 'dotenv/config';
+import { z } from 'zod';
+import { config } from './config.js';
 
 const app = express();
 app.use(cors());
@@ -12,31 +13,16 @@ app.use(express.json());
 // Simulando banco de dados em memória
 const orders = {};
 
-// --- Configuração segura via .env ---
-const {
-  RPC_URL,
-  HOT_WALLET_KEY,
-  TOKEN_ADDRESS,
-  TOKEN_DECIMALS = '8', // WBTC usa 8 casas
-  ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:3000',
-  WEBHOOK_SECRET = '',
-  AUTO_CONFIRM_MS = '0' // modo demo: confirma sozinho depois de X ms
-} = process.env;
-
-if (!RPC_URL || !HOT_WALLET_KEY || !TOKEN_ADDRESS) {
-  throw new Error('Faltam variáveis de ambiente: defina RPC_URL, HOT_WALLET_KEY e TOKEN_ADDRESS no .env');
-}
-
-const provider = new JsonRpcProvider(RPC_URL);
-const wallet = new Wallet(HOT_WALLET_KEY, provider);
+const provider = new JsonRpcProvider(config.rpcUrl);
+const wallet = new Wallet(config.hotWalletKey, provider);
 
 const tokenAbi = ['function transfer(address to, uint256 amount) public returns (bool)'];
-const tokenContract = new Contract(TOKEN_ADDRESS, tokenAbi, wallet);
+const tokenContract = new Contract(config.tokenAddress, tokenAbi, wallet);
 
 // CORS restrito (lista separada por vírgula no .env)
-const allowed = ALLOWED_ORIGINS === '*'
+const allowed = config.allowedOrigins.includes('*')
   ? ['*']
-  : ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+  : config.allowedOrigins;
 app.use(cors({
   origin: (origin, cb) => {
     if (allowed.includes('*')) return cb(null, true);
@@ -59,10 +45,18 @@ app.get('/api/price', async (_req, res) => {
 
 // Criar uma nova ordem de compra com PIX
 app.post('/api/order', async (req, res) => {
-  const { amountBRL, address } = req.body;
-  if (!amountBRL || !address) {
-    return res.status(400).json({ error: 'Parâmetros ausentes' });
+  const OrderSchema = z.object({
+    amountBRL: z.number().positive(),
+    address: z.string().min(1),
+    paymentMethod: z.string().optional(),
+    network: z.string().optional(),
+  });
+
+  const parseResult = OrderSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({ error: 'Parâmetros inválidos', details: parseResult.error.issues });
   }
+  const { amountBRL, address } = parseResult.data;
 
   const { data } = await axios.get(
     'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=brl,usd'
@@ -73,11 +67,12 @@ app.post('/api/order', async (req, res) => {
 
   const order = {
     id,
-    status: 'aguardando_pagamento',
+    status: 'aguardando_deposito',
     amountBRL,
     btcAmount,
     address,
     rateLocked: btcRate,
+    rateLockExpiresAt: new Date(Date.now() + config.rateLockSec * 1000),
     createdAt: new Date(),
     pixKey: 'chavepix@nexswap.com',
     qrCodeUrl: '/images/qrcode.png',
@@ -107,18 +102,18 @@ app.get('/api/order/:id', (req, res) => {
 app.post('/api/order/:id/confirm', async (req, res) => {
   const order = orders[req.params.id];
   if (!order) return res.status(404).json({ error: 'Ordem não encontrada' });
-  if (WEBHOOK_SECRET && req.headers['x-webhook-secret'] !== WEBHOOK_SECRET) {
+  if (config.webhookSecret && req.headers['x-webhook-secret'] !== config.webhookSecret) {
     return res.status(401).json({ error: 'Webhook não autorizado' });
   }
 
-  if (order.status !== 'aguardando_pagamento') {
+  if (order.status !== 'aguardando_deposito') {
     return res.status(400).json({ error: `Status atual não permite confirmação: ${order.status}` });
   }
 
   order.status = 'pago';
 
   try {
-    const amountToSend = parseUnits(order.btcAmount.toFixed(8), Number(TOKEN_DECIMALS));
+    const amountToSend = parseUnits(order.btcAmount.toFixed(8), Number(config.tokenDecimals));
     const tx = await tokenContract.transfer(order.address, amountToSend);
     await tx.wait();
 
@@ -133,28 +128,6 @@ app.post('/api/order/:id/confirm', async (req, res) => {
 
   res.json(order);
 });
-
-// Modo demo: confirma e envia tokens automaticamente após AUTO_CONFIRM_MS
-const autoMs = Number(AUTO_CONFIRM_MS);
-if (autoMs > 0) {
-  setInterval(async () => {
-    for (const order of Object.values(orders)) {
-      if (order.status === 'aguardando_pagamento') {
-        order.status = 'pago';
-        try {
-          const amountToSend = parseUnits(order.btcAmount.toFixed(8), Number(TOKEN_DECIMALS));
-          const tx = await tokenContract.transfer(order.address, amountToSend);
-          await tx.wait();
-          order.status = 'concluída';
-          order.txHash = tx.hash;
-        } catch (err) {
-          order.status = 'erro';
-          order.error = err.message;
-        }
-      }
-    }
-  }, autoMs);
-}
 
 app.use('/images', express.static('images'));
 
