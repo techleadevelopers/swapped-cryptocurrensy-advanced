@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { ethers, Wallet, Contract, JsonRpcProvider, parseUnits } from 'ethers';
 import { z } from 'zod';
 import { config } from './config.js';
+import { publish } from './queue.js';
+import { getCachedPrice } from './workers/priceWorker.js';
+import { initSchema, createOrder, getOrder, updateOrderStatus } from './db.js';
 
 const app = express();
 app.use(cors());
@@ -58,10 +61,7 @@ app.post('/api/order', async (req, res) => {
   }
   const { amountBRL, address } = parseResult.data;
 
-  const { data } = await axios.get(
-    'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=brl,usd'
-  );
-  const btcRate = data.bitcoin.brl;
+  const btcRate = await getCachedPrice();
   const btcAmount = amountBRL / btcRate;
   const id = uuidv4();
 
@@ -79,6 +79,8 @@ app.post('/api/order', async (req, res) => {
   };
 
   orders[id] = order;
+
+  publish('order.created', order);
 
   res.json({
     orderId: id,
