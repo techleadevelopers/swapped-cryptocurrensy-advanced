@@ -1,7 +1,8 @@
 
 :root {
-  --primary-color: #7B4BFF;
+  --primary-color: #1150a8d5;
   --secondary-color: #00E8FF;
+  --cyan: #00E8FF;
   --background-color: #fff;
   --background-color-with-opacity: rgba(255, 87, 51, 0.5); /* Cor com opacidade */
   --text-color: #1a1a1a;
@@ -24,6 +25,27 @@ body {
   overflow-x: hidden;
 }
 
+/* Shader de fundo (azuis translúcidos) */
+#bgShader {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -3;   /* camada mais ao fundo */
+  opacity: 0.4;  /* mais suave para se somar ao fundo atual */
+}
+
+#canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -2; /* entre o bgShader e o gradiente */
+  opacity: 0.7;
+}
+
 body::before {
   content: '';
   position: fixed;
@@ -38,8 +60,26 @@ body::before {
     radial-gradient(circle at 50% 50%, rgba(41, 196, 255, 0.9) 0%, transparent 80%);
   filter: blur(80px);
   pointer-events: none;
-  z-index: -1;
+  z-index: -1; /* permanece sobre o canvas para manter o fundo original */
   animation: backgroundPulse 10s ease infinite;
+}
+
+/* Ilustração fixa no rodapé do fundo */
+body::after {
+  content: 'Financial - Enterprise';
+  position: fixed;
+  left: 74%;
+  bottom: 16em; /* posiciona mais acima */
+  transform: translateX(-50%);
+  font-family: 'Montserrat', 'Poppins', 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.32em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: -2; /* atrás de todo o conteúdo e do ::before */
+  opacity: 0.9;
 }
 
 @keyframes backgroundPulse {
@@ -52,6 +92,18 @@ body::before {
   0% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
   50% { box-shadow: 0 0 40px rgba(77, 75, 212, 0.4); }
   100% { box-shadow: 0 0 20px rgba(123, 75, 255, 0.2); }
+}
+
+/* Premium glow button */
+.btn-premium-glow {
+  animation: glowPulse 2s infinite ease-in-out;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-premium-glow:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 @keyframes slideIn {
@@ -129,7 +181,7 @@ body::before {
   position: relative;
   left: 15em;
   bottom: 40em;
-  width: 8%;
+  width: 18%;
   max-height: 10%;
   opacity: 30%;
   
@@ -144,11 +196,12 @@ body::before {
 .wallets-icon {
   position: absolute;
   bottom: 0em;
-  right: 35em;
+  top: 12em;
+  right: 47em;
   height: auto;
-  z-index: -5;
-  width: 45%;
-  opacity: 0.3;
+  z-index: 0; /* above backgrounds */
+  width: 25%;
+  opacity: 0.35;
 }
 
 
@@ -226,13 +279,28 @@ body::before {
   display: none; /* efeito desativado */
 }
 
+#three-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2; /* atrás de partículas/background-glow */
+  pointer-events: none;
+}
+
+#three-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(10,15,40,0.6), rgba(10,15,40,0.6));
+  pointer-events: none;
+}
+
 .floating-particles .particle {
   position: absolute;
   width: 30px;
   height: 30px;
   object-fit: contain;
   opacity: 0.2;
-  animation: floatAnimation linear infinite;
+  animation: floatAnimation 18s linear infinite;
   pointer-events: none;
 }
 
@@ -252,11 +320,11 @@ body::before {
 .background-glow {
   position: fixed;
   inset: 0;
-  z-index: -2;
+  z-index: -2; /* atrás de partículas/background-glow */
   pointer-events: none;
   background:
-    radial-gradient(circle at 30% 20%, rgba(123, 63, 228, 0.28) 0%, rgba(10, 14, 39, 0) 55%),
-    radial-gradient(circle at 75% 75%, rgba(64, 130, 255, 0.22) 0%, rgba(10, 14, 39, 0) 60%);
+    radial-gradient(circle at 3% 2%, rgba(123, 63, 228, 0.28) 0%, rgba(10, 14, 39, 0) 5%),
+    radial-gradient(circle at 7% 7%, rgba(64, 130, 255, 0.22) 0%, rgba(10, 14, 39, 0) 6%);
   filter: blur(90px);
   display: none; /* efeito desativado */
 }
@@ -273,7 +341,7 @@ body::before {
   right: 0;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
-  padding: 10px 0;
+  padding: 10px 0; /* levemente mais alto */
   z-index: 1000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   animation: navbarGlow 4s infinite alternate;
@@ -306,12 +374,12 @@ body::before {
 }
 
 .nav-content {
-  max-width: 1400px;
+  max-width: 1360px; /* recoloca limite para não colar na borda */
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 16px; /* um pouco mais de respiro lateral */
 }
 
 .logo {
@@ -322,6 +390,7 @@ body::before {
   align-items: center;
   position: relative;
   height: 40px; /* mantém header na mesma altura */
+  margin-left: -6px; /* puxa ligeiramente para a esquerda */
 }
 
 .logo img {
@@ -335,7 +404,7 @@ body::before {
 
 .nav-links {
   display: flex;
-  gap: 24px;
+  gap: 16px; /* aproxima títulos entre si */
 }
 
 .nav-links a {
@@ -368,9 +437,9 @@ body::before {
 
 #app {
   display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 40px;
-  padding: 40px;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  padding: 120px 40px 60px 40px; /* more top space to clear navbar */
   max-width: 1600px;
   margin: 0 auto;
   align-items: start;
@@ -389,11 +458,44 @@ body::before {
 }
 
 .hero-section h1 {
-  font-size: 64px;
-  line-height: 1.2;
+  font-size: 48px;
+  line-height: 1.15;
   color: #cec5e0;
   margin-bottom: 30px;
   margin-top:  60px;
+}
+
+.hero-title {
+  font-size: 48px;
+  line-height: 1.15;
+  color: #cec5e0;
+  margin-bottom: 30px;
+  margin-top: 10px;
+  font-weight: 700;
+  min-height: 2.4em; /* mantém altura estável mesmo enquanto o texto é reescrito */
+}
+
+.hero-title .title-text {
+  display: inline-block;
+  max-width: 100%;
+}
+
+#premiumTitle::after {
+  content: none;
+}
+
+@keyframes blurShake {
+  0%   { transform: translate3d(0,0,0) rotate(0deg); filter: blur(0); }
+  20%  { transform: translate3d(-0.5px,0.5px,0) rotate(-0.15deg); filter: blur(0.5px); }
+  40%  { transform: translate3d(0.8px,-0.5px,0) rotate(0.15deg); filter: blur(0.9px); }
+  60%  { transform: translate3d(-0.5px,0.4px,0) rotate(0deg); filter: blur(0.5px); }
+  80%  { transform: translate3d(0.5px,-0.4px,0) rotate(0.1deg); filter: blur(0.4px); }
+  100% { transform: translate3d(0,0,0) rotate(0deg); filter: blur(0); }
+}
+
+.blur-shake {
+  animation: blurShake 2.4s ease-in-out infinite;
+  will-change: transform, filter;
 }
 
 .content-left {
@@ -470,6 +572,11 @@ body::before {
   border-radius: 24px;
   padding: 24px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  justify-self: start; /* anchor card toward the left */
+  margin-left: -150px; /* pull card further to the left */
+  margin-top: -10px; /* push card further down */
+  position: relative;
+  z-index: 1;
 }
 
 .toggle-container {
@@ -798,30 +905,40 @@ body::before {
 }
 
 .trust-badges {
+  position: fixed;
+  left: 29%;
+  bottom: 44%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 30px;
-  margin-bottom: 15px;
+  gap: 24px;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  z-index: 5;
+  margin: 0;
 }
 
 .trust-badge {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: #eee;
-  margin-top: 40px;
+  margin-top: 0;
+  margin-bottom: 6px;
 }
 
 .trust-badge .badge-icon {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
 }
 
 .trust-badge span {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .trust-badge strong {
-  color: var(--secondary-color);
+  color: #cec5e0;
   font-weight: 600;
 }
 
@@ -829,6 +946,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 15px;
+  margin-top: 10px;
   color: #bbb;
   font-size: 0.9rem;
 }
@@ -1075,12 +1193,11 @@ body::before {
     margin-bottom: 10px; /* Adiciona espaço abaixo do logo */
     font-size: 20px; /* Reduz o tamanho da fonte do logo */
     height: 40px;
+    margin-left: 0;
   }
 
   .nav-links {
-    flex-direction: row; /* Mantém os links em linha para telas maiores que mobile pequeno */
-    gap: 15px; /* Reduz o espaçamento entre os links */
-    text-align: center; /* Centraliza o texto dos links */
+    display: none; /* esconde links no mobile */
   }
 
   .nav-links a {
@@ -1090,10 +1207,24 @@ body::before {
 
   /* Posicionamento do Card de Swap */
   #app {
-    padding: 20px; /* Reduz o padding geral */
-    gap: 20px; /* Reduz o espaçamento entre as seções */
+    display: flex; /* força coluna no mobile */
     flex-direction: column; /* Garante que os itens fiquem em coluna */
     align-items: center; /* Centraliza os itens horizontalmente */
+    padding: 20px; /* Reduz o padding geral */
+    gap: 20px; /* Reduz o espaçamento entre as seções */
+  }
+
+  /* Reordena no mobile: card primeiro, título depois */
+  .swap-card {
+    order: 1;
+    width: 94%;
+    max-width: 520px;
+  }
+
+  .content-left {
+    order: 2;
+    width: 100%;
+    max-width: 520px;
   }
 
   .swap-card {
@@ -1122,6 +1253,35 @@ body::before {
   .hero-section p {
     font-size: 16px; /* Mantém o tamanho da fonte do parágrafo */
     line-height: 1.5; /* Melhora a legibilidade do texto */
+  }
+
+  .hero-title {
+    font-size: 34px;
+    line-height: 1.25;
+    margin-top: 16px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .hero-section .hero-subtitle {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .trust-badges {
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .trust-badge {
+    width: calc(50% - 12px);
+    justify-content: center;
+    margin-top: 0;
+    text-align: center;
   }
 
   /* Ajustes para os cards de estatísticas */
@@ -1214,7 +1374,7 @@ body::before {
   .wallets-icon {
     right: 5%;
     bottom: 5%;
-    width: 60%;
+    width: 80%;
   }
 
   /* Outros ajustes visuais conforme necessário */
@@ -1392,3 +1552,6 @@ body::before {
               
 
 }
+
+
+/* Footer illustration — fixed and non-interactive */
