@@ -52,6 +52,51 @@ export async function getPendingOrders() {
   return rows;
 }
 
+export async function statsPixLast24h(pixCpf, pixPhone) {
+  const params = [];
+  const conds = [];
+  if (pixCpf) {
+    params.push(pixCpf);
+    conds.push(`pix_cpf = $${params.length}`);
+  }
+  if (pixPhone) {
+    params.push(pixPhone);
+    conds.push(`pix_phone = $${params.length}`);
+  }
+  if (!conds.length) return { count: 0, total: 0 };
+  const where = conds.join(' OR ');
+  params.push(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS count, COALESCE(SUM(amount_brl),0)::numeric AS total
+     FROM orders
+     WHERE (${where}) AND created_at >= $${params.length}`,
+    params
+  );
+  return { count: rows[0]?.count ?? 0, total: Number(rows[0]?.total ?? 0) };
+}
+
+export async function countCompletedOrdersForPix(pixCpf, pixPhone) {
+  const params = [];
+  const conds = [];
+  if (pixCpf) {
+    params.push(pixCpf);
+    conds.push(`pix_cpf = $${params.length}`);
+  }
+  if (pixPhone) {
+    params.push(pixPhone);
+    conds.push(`pix_phone = $${params.length}`);
+  }
+  if (!conds.length) return 0;
+  const where = conds.join(' OR ');
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS count
+     FROM orders
+     WHERE (${where}) AND status = 'concluída'`,
+    params
+  );
+  return rows[0]?.count ?? 0;
+}
+
 export async function updateOrderStatus(id, status, extra = {}) {
   const { txHash, error, depositTx, depositAmount } = extra;
   await pool.query(
@@ -71,6 +116,14 @@ export async function addEvent(orderId, type, payload) {
     `INSERT INTO order_events (id, order_id, type, payload) VALUES (gen_random_uuid(), $1, $2, $3)`,
     [orderId, type, payload]
   );
+}
+
+export async function hasEvent(orderId, type, field, value) {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM order_events WHERE order_id = $1 AND type = $2 AND payload ->> $3 = $4 LIMIT 1`,
+    [orderId, type, field, value]
+  );
+  return rows.length > 0;
 }
 
 export async function closePool() {
@@ -97,10 +150,10 @@ export async function saveCursor(network, lastBlock) {
 
 export async function createSweep(data) {
   const { rows } = await pool.query(
-    `INSERT INTO sweeps (id, child_index, from_addr, to_addr, amount, status)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'pending')
+    `INSERT INTO sweeps (id, child_index, from_addr, to_addr, amount, status, order_id)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'pending', $5)
      RETURNING *`,
-    [data.childIndex, data.fromAddr, data.toAddr, data.amount]
+    [data.childIndex, data.fromAddr, data.toAddr, data.amount, data.orderId || null]
   );
   return rows[0];
 }
@@ -115,4 +168,19 @@ export async function markSweep(id, status, txHash = null) {
     `UPDATE sweeps SET status = $2, tx_hash = COALESCE($3, tx_hash), updated_at = now() WHERE id = $1`,
     [id, status, txHash]
   );
+}
+
+export async function ordersToSweep() {
+  const { rows } = await pool.query(`
+    SELECT o.*
+    FROM orders o
+    WHERE o.status = 'pago'
+      AND o.derivation_index IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM sweeps s
+        WHERE s.order_id = o.id
+          AND s.status IN ('pending','sent','confirmed')
+      )
+  `);
+  return rows;
 }
