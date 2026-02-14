@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NexSwap - Buy & Sell Crypto Simply</title>
+    <title>Buy & Sell Crypto Simply</title>
+    <link rel="icon" href="https://res.cloudinary.com/limpeja/image/upload/v1771076927/iconnn-Photoroom_wdsmis.png" type="image/png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <link rel="stylesheet" href="style.css">
     <style>
         /* Estilos para ocultar elementos */
@@ -91,8 +101,89 @@
     </style>
 </head>
 <body>
+    <!-- Canvas de fundo original -->
+    <canvas id="bgShader"></canvas>
+    <!-- Novo canvas com shader azul/cyan translúcido -->
+    <canvas id="canvas"></canvas>
+    <script type="x-shader/x-fragment" id="blueShaderSource">#version 300 es
+/*********
+* made by Matthias Hurrle (@atzedent)
+*/
+precision highp float;
+out vec4 O;
+uniform float time;
+uniform vec2 resolution;
+#define FC gl_FragCoord.xy
+#define R resolution
+#define T time
+#define MN min(R.x,R.y)
+#define S smoothstep
+#define SE(v,a) S(fwidth(a),-.35,v-a)
+#define PI radians(180.)
+#define lum(a) dot(a,vec3(.21,.71,.07))
+#define hue(a)(.5+.5*sin(PI*(a)+vec3(1,2,3)))
+vec3 watermark() {
+	vec3 col=vec3(0);
+	float rel=R.x/R.y;
+	vec2 z=FC/R;
+	z.x*=rel;
+	z.x-=rel;
+	z+=vec2(.1,-.1);
+	float j=.025, id=round(z.y/j);
+	z.y-=clamp(round(z.y/j),-1.,1.)*j;
+	float bx=max(abs(z.x),abs(z.y)), rect=step(bx,.01), frame=rect-step(bx,.008);
+	return clamp(mix(col,rect*hue(cos(T*.2)-id*PI*2.),mix(frame,rect,.5)),.0,1.);
+}
+void main() {
+	vec3 wm=watermark();
+	O=vec4(wm,0);
+	vec3 bg=vec3(.08);
+	vec2 uv=2.*FC-R, st=(FC-.5*R)/MN;
+	float bs=MN*.05;
+	if ((R.x>R.y) && (abs(st.x)>1. || abs(st.y)>.5)) {
+		O=max(O,vec4(bg,0));
+		return;
+	}
+	uv*=mat2(cos(sin(T*.2)-vec4(0,11,33,0)))*exp(cos(T)*.321)*(.7+.5*cos(T*.5));
+	float d=length(uv)/MN;
+	uv=vec2(log(d),.205+atan(uv.x,uv.y))*8./PI;
+	vec2 p=uv;
+	uv.x+=floor(uv.y*.5)*.5-T*1.5;
+	uv=mod(uv,2.)-1.;
+	p+=sin(T*10.-p*vec2(10,30))*.01;
+	uv*=uv*uv*uv;
+	float l=dot(uv,uv);
+	l=abs(d-SE(l,.2));
+	vec3 col=hue(l*l-T*.5);
+	col=tanh(col*col)/(.01+.25*lum(vec3(distance(cos((p.x-T)*12.),sin(p.y*42.)))));
+	col=sqrt(col);
+	l=dot(abs(uv)/dot(p,4.5*p)-.9,st);
+	col=mix(2.*sqrt(hue(.1+l)/max(l*l*l*l,.1)),col,S(-.5,.5,length((FC-.5*R)/MN)));
+	col/=4.;
+	col=mix(vec3(.85),col,mix(.6,1.,fract(sin(dot(st, vec2(12.9898,78.233))*345678.))));
+	col=max(col,.1);
+	col=mix(col,vec3(1),S(1e-5,-1e-2,dot(st,st)));
+	// vignette
+	vec2 c=FC/R;
+	c*=1.-c.yx;
+	float vig=c.x*c.y*25.;
+	vig=S(.0,1.,pow(vig,.3));
+	col=mix(vec3(lum(col)),col,vig);
+	col=mix(vec3(0),col,vig);
+	col*=vec3(1.2*lum(col));
+	col=sqrt(col);
+	if (R.x>R.y) {
+		if (FC.x > R.x-bs || FC.x < bs || FC.y > R.y-bs || FC.y < bs) {
+			O=max(O,vec4(bg,0));
+			return;
+		}
+	}
+	col=max(col,wm);
+  O=vec4(col,1);
+}</script>
     <div class="background-glow"></div>
     <div class="floating-particles" id="particles-container"></div>
+    <div id="three-background"></div>
     <nav class="navbar">
             <div class="nav-content">
             <div class="logo"><img src="https://res.cloudinary.com/limpeja/image/upload/v1770993671/swap_1_mvctri.png" alt="NexSwap logo" /></div>
@@ -104,14 +195,17 @@
             </div>
         </div>
     </nav>
-    <img src="/images/btc-icon.png" class="wallets-icon" />
 
     <div class="background-grid"></div>
 
     <div id="app">
         <div class="content-left">
             <div class="hero-section">
-                <h1>Secure buy + sell instants PIX</h1>
+                <div class="hero-title">
+                    <span class="title-text" id="premiumTitle" data-text-en="Securely buy and sell crypto instantly via PIX" data-text-ar="Securely buy and sell crypto instantly via PIX">
+                        Securely buy and sell crypto instantly via PIX
+                    </span>
+                </div>
                 <p class="hero-subtitle">Swap seamlessly with 30+ local payment methods. Experience crypto without the complexity.</p>
 
                 <div class="trust-badges">
@@ -137,7 +231,7 @@
                 </div>
 
                 <div class="security-info">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="security-icon">
+                    
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.17 9 12 5.16-1.83 9-6.45 9-12V5l-9-4zm0 10.7c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/>
                     </svg>
                     <span>Secure and seamless transactions. Your peace of mind is our priority.</span>
@@ -153,7 +247,7 @@
                 </div>
             </div>
 
-            <div class="input-section" id="inputSection">
+            <div class="input-section step-content step-1" id="inputSection">
               <div class="currency-input">
                   <label for="payAmount">Pay</label>
                   <div class="input-group">
@@ -191,7 +285,7 @@
           </div>
           
 
-          <div class="step-2" id="step2">
+          <div class="step-2 step-content hidden" id="step2">
               <div class="order-summary-step2">
                   <p>Pagar: <strong id="displayPayAmountStep2"></strong></p>
                   <p>Receber: <strong id="displayReceiveAmountStep2"></strong></p>
@@ -239,7 +333,7 @@
                   </div>
               </div>
           </div>
-            <button type="button" class="continue-btn" id="continueBtn">
+            <button type="button" class="continue-btn btn-premium-glow" id="continueBtn">
                 Continue
                 <svg viewBox="0 0 24 24">
                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
@@ -294,7 +388,7 @@
                 <button class="confirm-payment-btn" id="confirmPaymentBtn">Confirm Payment</button>
             </div>
 
-            <div class="payment-info" id="orderInfoBox" style="margin-top:20px;">
+            <div class="payment-info hidden" id="orderInfoBox" style="margin-top:20px;">
                 <h3>Ordem TRON/USDT</h3>
                 <p class="payment-summary-text">
                     <strong>Endereço TRON:</strong><br>
@@ -310,606 +404,199 @@
             
    <!-- ... (todo o conteúdo anterior do seu HTML permanece igual) ... -->
 
-   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Integração real TRON/USDT
-        const API_BASE = 'https://swappy-financial-backend-cripto-production.up.railway.app';
-        const createOrderBtn = document.getElementById('createOrderBtn');
-        const depositAddressEl = document.getElementById('depositAddress');
-        const orderStatusEl = document.getElementById('orderStatus');
-        const orderIdEl = document.getElementById('orderId');
-        const orderErrorEl = document.getElementById('orderError');
-        const payAmountInput = document.getElementById('payAmount');
-        const pixPhoneInput = document.getElementById('pixPhone');
-        const pixCpfInput = document.getElementById('pixCpf');
+   <script src="main.js"></script>
+   <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        let eventSource = null;
+    const container = document.getElementById('three-background');
+    if (container) {
+      const scene = new THREE.Scene();
+      // transparent background
+      scene.background = null;
 
-        function setOrderStatus(text) {
-            if (orderStatusEl) orderStatusEl.textContent = text || '—';
-        }
-        function setOrderError(msg) {
-            if (!orderErrorEl) return;
-            if (msg) {
-                orderErrorEl.textContent = msg;
-                orderErrorEl.style.display = 'block';
-            } else {
-                orderErrorEl.textContent = '';
-                orderErrorEl.style.display = 'none';
-            }
-        }
-        function startStream(orderId) {
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-            try {
-                eventSource = new EventSource(`${API_BASE}/api/order/${orderId}/stream`);
-                eventSource.onmessage = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.data);
-                        setOrderStatus(data.status || '—');
-                    } catch (e) {
-                        console.warn('SSE parse', e);
-                    }
-                };
-                eventSource.onerror = () => {
-                    eventSource?.close();
-                };
-            } catch (e) {
-                console.warn('SSE error', e);
-            }
-        }
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const baseZ = 34;
+      const updateCameraForAspect = () => {
+        const aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = aspect;
+        camera.position.z = baseZ * Math.max(1, aspect); // push back on ultrawide to keep scale similar
+        camera.updateProjectionMatrix();
+      };
+      updateCameraForAspect();
 
-        async function createOrder() {
-            setOrderError('');
-            const amount = parseFloat(payAmountInput?.value || '0');
-            const phone = pixPhoneInput?.value?.replace(/\D/g, '') || '';
-            const cpf = pixCpfInput?.value?.replace(/\D/g, '') || '';
-            if (!amount || amount <= 0) {
-                setOrderError('Informe um valor válido em BRL.');
-                return;
-            }
-            if (!phone) {
-                setOrderError('Informe a chave PIX (telefone).');
-                return;
-            }
-            try {
-                const resp = await fetch(`${API_BASE}/api/order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amountBRL: amount,
-                        pixPhone: phone,
-                        pixCpf: cpf
-                    })
-                });
-                if (!resp.ok) {
-                    const data = await resp.json().catch(() => ({}));
-                    const msg = data?.error || (resp.status === 429 ? 'Limite diário por chave PIX atingido.' : 'Erro ao criar ordem');
-                    setOrderError(msg);
-                    return;
-                }
-                const data = await resp.json();
-                if (depositAddressEl) depositAddressEl.textContent = data.depositAddress || '—';
-                if (orderIdEl) orderIdEl.textContent = data.orderId || '—';
-                setOrderStatus(data.status || 'aguardando_deposito');
-                if (data.orderId) startStream(data.orderId);
-            } catch (err) {
-                console.error(err);
-                setOrderError('Falha de rede ao criar ordem.');
-            }
-        }
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0); // fully transparent
+      renderer.toneMapping = THREE.ReinhardToneMapping;
+      renderer.domElement.style.position = 'fixed';
+      renderer.domElement.style.inset = '0';
+      renderer.domElement.style.pointerEvents = 'none';
+      container.appendChild(renderer.domElement);
 
-        if (createOrderBtn) {
-            createOrderBtn.addEventListener('click', createOrder);
-        }
+      // Post-processing
+      const renderPass = new RenderPass(scene, camera);
+      const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.4, 0.35, 0.85);
+      const composer = new EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(bloomPass);
 
-        const continueBtn = document.getElementById('continueBtn');
-        const step2 = document.getElementById('step2');
-        const inputSection = document.getElementById('inputSection');
-        const toggleContainer = document.querySelector('.toggle-container');
-        const rateText = document.querySelector('.rate-text');
-        const rateSpinner = document.querySelector('.loading-spinner');
-        const payAmount = document.getElementById('payAmount');
-        const receiveAmount = document.getElementById('receiveAmount');
-        const paymentMethods = document.querySelectorAll('.payment-method');
-        const paymentInfoSection = document.getElementById('paymentInfoSection');
-        const paymentAmountDisplay = document.getElementById('paymentAmount');
-        const paymentMethodDisplay = document.getElementById('paymentMethod');
-        const paymentWalletDisplay = document.getElementById('paymentWallet');
-        const walletRow = document.getElementById('walletRow');
-        const pixKeyDisplay = document.getElementById('pixKey');
-        const paymentSummary = document.getElementById('paymentSummary');
-        const qrCodeImg = document.getElementById('qrCodeImg');
-        const statusMessage = document.getElementById('statusMessage');
-        const terms = document.querySelector('.terms');
-        const walletGroup = document.getElementById('walletGroup');
-        const sellInfo = document.getElementById('sellInfo');
-        const pixCpfInput = document.getElementById('pixCpf');
-        const pixPhoneInput = document.getElementById('pixPhone');
-        const sellDepositBlock = document.getElementById('sellDepositBlock');
-        const sellDepositInput = document.getElementById('sellDepositAddressInput');
-        const sellNetworkSelect = document.getElementById('sellNetwork');
-        const confirmBtn = document.getElementById('confirmPaymentBtn');
-        const countdownBlock = document.getElementById('countdownBlock');
-        const cdMinutes = document.getElementById('cdMinutes');
-        const cdSeconds = document.getElementById('cdSeconds');
-        const cdCentis = document.getElementById('cdCentis');
-    
-        const displayPayAmountStep2 = document.getElementById('displayPayAmountStep2');
-        const displayReceiveAmountStep2 = document.getElementById('displayReceiveAmountStep2');
-    
-        let selectedMethod = null;
-        let orderId = null;
-        let pollingInterval = null;
-        let countdownInterval = null;
-        let currentStep = 1;
-        let action = 'buy';
-        const SELL_DEPOSIT_ADDRESS = 'bc1qexampledepositaddress0000000';
-        const SELL_DEPOSIT_ADDRESSES = {
-            btc: 'bc1qexampledepositaddress0000000',
-            erc20: '0xExampleERC20Deposit0000000000000000',
-            trc20: 'TAExampleTRC20Deposit0000000000'
+      // Material & geometry helpers
+      const params = {
+        lineColor: '#5c5c5c',
+        dotColor: '#33ccff',
+        speed: 0.12,
+        dotLength: 0.02,
+        dotDensity: 2.0
+      };
+
+      const vertexShader = `
+        attribute float lineDistance;
+        varying float vDistance;
+        void main() {
+          vDistance = lineDistance;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `;
+
+      const fragmentShader = `
+        uniform vec3 colorLine;
+        uniform vec3 colorDot;
+        uniform float uTime;
+        uniform float uSpeed;
+        uniform float uDotLength;
+        uniform float uDotRepeat;
+        varying float vDistance;
+        void main() {
+          float alpha = 0.2;
+          float distanceState = vDistance - uTime * uSpeed * 10.0;
+          float flow = mod(distanceState, uDotRepeat * 10.0);
+          float lengthVal = (uDotRepeat * 10.0) * uDotLength;
+          float signal = smoothstep((uDotRepeat * 10.0) - lengthVal, (uDotRepeat * 10.0), flow);
+          if(flow < (uDotRepeat * 10.0) - lengthVal) signal = 0.0;
+          vec3 finalColor = mix(colorLine, colorDot, signal);
+          float finalAlpha = max(alpha, signal * 0.9);
+          gl_FragColor = vec4(finalColor, finalAlpha);
+        }
+      `;
+
+      const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms: {
+          colorLine: { value: new THREE.Color(params.lineColor) },
+          colorDot: { value: new THREE.Color(params.dotColor) },
+          uTime: { value: 0 },
+          uSpeed: { value: params.speed },
+          uDotLength: { value: params.dotLength },
+          uDotRepeat: { value: params.dotDensity }
+        },
+        transparent: true,
+        depthTest: false,
+        blending: THREE.NormalBlending,
+        side: THREE.DoubleSide
+      });
+
+      const gridParams = () => {
+        const baseStep = 2;
+        const densityFactor = Math.max(0.7, Math.min(1.4, 1920 / window.innerWidth)); // keep similar visual density
+        const step = baseStep * densityFactor;
+        const range = 26 * densityFactor * 2; // expand search range when step shrinks
+        const maxSegments = Math.round(4800 * densityFactor);
+        return { step, range, maxSegments };
+      };
+
+      function isPointInside(v, range) {
+        const r = range;
+        return Math.abs(v.x) < r && Math.abs(v.y) < r && Math.abs(v.z) < r;
+      }
+
+      function isSurface(v, step, range) {
+        if (!isPointInside(v, range)) return false;
+        const dirs = [
+          new THREE.Vector3(step,0,0), new THREE.Vector3(-step,0,0),
+          new THREE.Vector3(0,step,0), new THREE.Vector3(0,-step,0),
+          new THREE.Vector3(0,0,step), new THREE.Vector3(0,0,-step)
+        ];
+        for (let d of dirs) {
+          const n = v.clone().add(d);
+          if (!isPointInside(n, range)) return true;
+        }
+        return false;
+      }
+
+      function createGeometry() {
+        const { step, range, maxSegments } = gridParams();
+        const positions = [];
+        const attributes = [];
+
+        const findStart = () => {
+          for (let k = 0; k < 200; k++) {
+            const p = new THREE.Vector3(
+              (Math.random()-0.5)*range,
+              (Math.random()-0.5)*range,
+              (Math.random()-0.5)*range
+            ).round();
+            p.x = Math.round(p.x/step)*step;
+            p.y = Math.round(p.y/step)*step;
+            p.z = Math.round(p.z/step)*step;
+            if (isSurface(p, step, range)) return p;
+          }
+          return new THREE.Vector3(0,0,0);
         };
-    
-        step2.classList.add('hidden');
-        paymentInfoSection.classList.add('hidden');
-        inputSection.classList.remove('hidden');
-        continueBtn.classList.remove('hidden');
-        toggleContainer.classList.remove('hidden');
-        terms.classList.remove('hidden');
-    
-        let btcToBrl = 0;
-    
-        const API_BASE = window.API_BASE || 'http://localhost:3000';
 
-        async function loadRate() {
-            try {
-                const res = await fetch(`${API_BASE}/api/price`);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                const data = await res.json();
-                return data.brl;
-            } catch (err) {
-                // Fallback direto na CoinGecko para evitar bloqueio local
-                try {
-                    const cg = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl');
-                    if (!cg.ok) throw new Error(`CoinGecko HTTP ${cg.status}`);
-                    const data = await cg.json();
-                    return data.bitcoin.brl;
-                } catch (e2) {
-                    throw err; // mantém erro original se fallback falhar
-                }
-            }
+        let currentPos = findStart();
+        let currentDist = 0;
+
+        for (let i = 0; i < maxSegments; i++) {
+          const dirs = [
+            new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
+            new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
+            new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step)
+          ];
+          const dir = dirs[Math.floor(Math.random() * 6)];
+          const next = currentPos.clone().add(dir);
+
+          if (isSurface(next, step, range)) {
+            positions.push(currentPos.x, currentPos.y, currentPos.z, next.x, next.y, next.z);
+            attributes.push(currentDist, currentDist + step);
+            currentDist += step;
+            currentPos.copy(next);
+          } else {
+            currentDist += 30;
+            currentPos = findStart();
+          }
         }
 
-        loadRate()
-            .then(rate => {
-                btcToBrl = rate;
-                rateSpinner.classList.add('hidden');
-                rateText.textContent = `1 BTC ≈ ${btcToBrl.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                })}`;
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('lineDistance', new THREE.Float32BufferAttribute(attributes, 1));
+        return geometry;
+      }
 
-                payAmount.addEventListener('input', () => {
-                    const inputValue = parseFloat(payAmount.value);
-                    if (isNaN(inputValue) || inputValue <= 0 || !btcToBrl) {
-                        receiveAmount.value = '';
-                        return;
-                    }
-                    if (action === 'buy') {
-                        const btcValue = inputValue / btcToBrl;
-                        receiveAmount.value = btcValue.toFixed(8);
-                    } else {
-                        const brlValue = inputValue * btcToBrl;
-                        receiveAmount.value = brlValue.toFixed(2);
-                    }
-                });
-            })
-            .catch(err => {
-                console.error("Erro ao buscar a taxa BTC:", err);
-                rateSpinner.classList.add('hidden');
-                rateText.textContent = "Erro ao buscar a taxa 😓";
-            });
-    
-        paymentMethods.forEach(btn => {
-            btn.addEventListener('click', () => {
-                paymentMethods.forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedMethod = btn.dataset.method;
-            });
-        });
-    
-        continueBtn.addEventListener('click', async () => {
-            continueBtn.disabled = true;
-            setTimeout(() => continueBtn.disabled = false, 1000);
-    
-            if (currentStep === 1) {
-                let amountBRL, amountBTC, payLabel, receiveLabel;
-                if (action === 'buy') {
-                    amountBRL = payAmount.value.trim();
-                    amountBTC = receiveAmount.value.trim();
-                    payLabel = `${parseFloat(amountBRL).toFixed(2)} BRL`;
-                    receiveLabel = `${parseFloat(amountBTC).toFixed(6)} BTC`;
-                } else {
-                    amountBTC = payAmount.value.trim();
-                    amountBRL = receiveAmount.value.trim();
-                    payLabel = `${parseFloat(amountBTC).toFixed(6)} BTC`;
-                    receiveLabel = `${parseFloat(amountBRL).toFixed(2)} BRL`;
-                }
+      let mesh = new THREE.LineSegments(createGeometry(), material);
+      scene.add(mesh);
 
-                if (!amountBRL || parseFloat(amountBRL) <= 0) {
-                    alert("Digite um valor válido.");
-                    return;
-                }
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        material.uniforms.uTime.value = clock.getElapsedTime();
+        composer.render();
+      }
+      animate();
 
-                if (!amountBTC || parseFloat(amountBTC) <= 0) {
-                    alert("Erro ao calcular os valores.");
-                    return;
-                }
+      window.addEventListener('resize', () => {
+        updateCameraForAspect();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        composer.setSize(window.innerWidth, window.innerHeight);
+      });
+   }
+   </script>
 
-                displayPayAmountStep2.textContent = payLabel;
-                displayReceiveAmountStep2.textContent = receiveLabel;
-
-                inputSection.classList.add('hidden');
-                step2.classList.remove('hidden');
-                currentStep = 2;
-            } else if (currentStep === 2) {
-                const wallet = document.getElementById('walletAddress').value.trim();
-                const selectedMethodElement = document.querySelector('.payment-method.selected');
-
-                if (action === 'buy') {
-                    if (!wallet) {
-                        alert("Digite o endereço da sua carteira.");
-                        return;
-                    }
-                    const ethLike = /^0x[a-fA-F0-9]{40}$/;
-                    const btcLike = /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/;
-                    if (!ethLike.test(wallet) && !btcLike.test(wallet)) {
-                        alert("Endereço inválido. Use um endereço Ethereum (0x...) ou BTC (bc1/1/3...).");
-                        return;
-                    }
-                }
-
-                if (action === 'sell') {
-                    const cpf = pixCpfInput.value.trim();
-                    const phone = pixPhoneInput.value.trim();
-                    if (!cpf || !phone) {
-                        alert("Informe CPF e telefone para receber via PIX.");
-                        return;
-                    }
-                }
-
-                if (action === 'buy' && !selectedMethodElement) {
-                    alert("Selecione um método de pagamento.");
-                    return;
-                }
-
-                const selectedMethod = action === 'sell' ? 'pix' : selectedMethodElement.dataset.method;
-                let amountBRL, amountBTC;
-                if (action === 'buy') {
-                    amountBRL = payAmount.value.trim();
-                    amountBTC = receiveAmount.value.trim();
-                } else {
-                    amountBTC = payAmount.value.trim();
-                    amountBRL = receiveAmount.value.trim();
-                }
-
-                try {
-                    const res = await fetch("http://localhost:3000/api/order", {
-                        method: "POST",
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            amountBRL: parseFloat(amountBRL),
-                            amountBTC: parseFloat(amountBTC),
-                            address: action === 'sell' ? SELL_DEPOSIT_ADDRESS : wallet,
-                            paymentMethod: selectedMethod,
-                            pixCpf: action === 'sell' ? pixCpfInput.value.trim() : undefined,
-                            pixPhone: action === 'sell' ? pixPhoneInput.value.trim() : undefined
-                        })
-                    });
-    
-                    if (!res.ok) {
-                        const error = await res.json();
-                        throw new Error(error.message || 'Erro inesperado.');
-                    }
-    
-                    const data = await res.json();
-                    orderId = data.orderId;
-    
-                    if (!orderId) {
-                        throw new Error('Dados incompletos recebidos.');
-                    }
-
-                    if (action === 'buy') {
-                        paymentAmountDisplay.textContent = `${amountBRL} BRL (${amountBTC} BTC)`;
-                        paymentMethodDisplay.textContent = selectedMethod.toUpperCase();
-                        paymentWalletDisplay.textContent = wallet;
-                        pixKeyDisplay.textContent = data.pixKey || '—';
-                        qrCodeImg.src = data.qrCodeUrl || '';
-                        qrCodeImg.classList.remove('hidden');
-                        sellDepositBlock.classList.add('hidden');
-                        walletRow.classList.remove('hidden');
-                    } else {
-                        paymentAmountDisplay.textContent = `${amountBTC} BTC (${amountBRL} BRL)`;
-                        paymentMethodDisplay.textContent = 'PIX';
-                        const selectedNetwork = sellNetworkSelect.value;
-                        const depositAddress = SELL_DEPOSIT_ADDRESSES[selectedNetwork] || SELL_DEPOSIT_ADDRESS;
-                        paymentWalletDisplay.textContent = '';
-                        pixKeyDisplay.textContent = `${pixCpfInput.value.trim()} / ${pixPhoneInput.value.trim()}`;
-                        sellDepositInput.value = depositAddress;
-                        sellDepositBlock.classList.remove('hidden');
-                        qrCodeImg.classList.add('hidden'); // não exibimos QR em sell
-                        qrCodeImg.src = '';
-                        walletRow.classList.add('hidden');
-                    }
-    
-                    paymentInfoSection.classList.remove('hidden');
-                    inputSection.classList.add('hidden');
-                    step2.classList.add('hidden');
-                    continueBtn.classList.add('hidden');
-                    toggleContainer.classList.add('hidden');
-                    terms.classList.add('hidden');
-                    currentStep = 3;
-                    countdownBlock.classList.add('hidden');
-                    cdMinutes.textContent = '15';
-                    cdSeconds.textContent = '00';
-                    cdCentis.textContent = '00';
-    
-                    pollingInterval = setInterval(async () => {
-                        if (!orderId) {
-                            clearInterval(pollingInterval);
-                            return;
-                        }
-
-                        try {
-                            const statusRes = await fetch(`http://localhost:3000/api/order/${orderId}`);
-                            if (!statusRes.ok) return;
-
-                            const statusData = await statusRes.json();
-                            if (statusData.status === 'concluída') {
-                                clearInterval(pollingInterval);
-                                statusMessage.innerHTML = `✅ Pagamento confirmado!<br>Hash da transação: <code>${statusData.txHash || 'N/A'}</code>`;
-                            } else if (statusData.status === 'pago') {
-                                statusMessage.innerHTML = `⏳ Depósito confirmado. Aguardando liquidação on-chain...`;
-                            } else if (statusData.status === 'cancelada' || statusData.status === 'expirada') {
-                                clearInterval(pollingInterval);
-                                statusMessage.innerHTML = `❌ Pagamento ${statusData.status}. Crie uma nova ordem.`;
-
-                                payAmount.value = '';
-                                receiveAmount.value = '';
-                                document.getElementById('walletAddress').value = '';
-                            } else if (statusData.status === 'erro') {
-                                clearInterval(pollingInterval);
-                                statusMessage.innerHTML = `⚠️ Erro ao processar: ${statusData.error || 'desconhecido'}`;
-                            }
-                        } catch (pollingErr) {
-                            console.error("Erro durante polling:", pollingErr);
-                        }
-                    }, 5000);
-    
-                } catch (err) {
-                    console.error("Erro ao criar ordem:", err);
-                    // Para SELL, seguimos para o passo final mesmo que o backend falhe
-                    if (action === 'sell') {
-                        const selectedNetwork = sellNetworkSelect.value;
-                        const depositAddress = SELL_DEPOSIT_ADDRESSES[selectedNetwork] || SELL_DEPOSIT_ADDRESS;
-
-                        paymentAmountDisplay.textContent = `${amountBTC || 0} BTC (${amountBRL || 0} BRL)`;
-                        paymentMethodDisplay.textContent = 'PIX';
-                        paymentWalletDisplay.textContent = '';
-                        pixKeyDisplay.textContent = `${pixCpfInput.value.trim()} / ${pixPhoneInput.value.trim()}`;
-                        sellDepositInput.value = depositAddress;
-                        sellDepositBlock.classList.remove('hidden');
-                        qrCodeImg.classList.add('hidden');
-                        qrCodeImg.src = '';
-                        walletRow.classList.add('hidden');
-
-                        paymentInfoSection.classList.remove('hidden');
-                        inputSection.classList.add('hidden');
-                        step2.classList.add('hidden');
-                        continueBtn.classList.add('hidden');
-                        toggleContainer.classList.add('hidden');
-                        terms.classList.add('hidden');
-                        currentStep = 3;
-                        countdownBlock.classList.add('hidden');
-                        cdMinutes.textContent = '15';
-                        cdSeconds.textContent = '00';
-                        cdCentis.textContent = '00';
-                    } else {
-                        alert("Erro ao processar pedido.");
-                    }
-                }
-            }
-        });
-    
-        document.querySelectorAll('.toggle-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                currentStep = 1;
-                action = button.dataset.action;
-                inputSection.classList.remove('hidden');
-                step2.classList.add('hidden');
-                paymentInfoSection.classList.add('hidden');
-                continueBtn.classList.remove('hidden');
-                toggleContainer.classList.remove('hidden');
-                terms.classList.remove('hidden');
-                countdownBlock.classList.add('hidden');
-                cdMinutes.textContent = '15';
-                cdSeconds.textContent = '00';
-                cdCentis.textContent = '00';
-                paymentSummary.classList.remove('hidden');
-                sellDepositBlock.classList.add('hidden');
-                qrCodeImg.classList.add('hidden');
-                confirmBtn.classList.remove('hidden');
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
-
-                payAmount.value = '';
-                receiveAmount.value = '';
-                document.getElementById('walletAddress').value = '';
-                paymentMethods.forEach(b => b.classList.remove('selected'));
-                selectedMethod = null;
-
-                displayPayAmountStep2.textContent = '';
-                displayReceiveAmountStep2.textContent = '';
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
-                }
-                statusMessage.textContent = '';
-
-                document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-
-                applyActionUI();
-            });
-        });
-
-        // Ajusta UI e rótulos conforme Buy/Sell
-        function applyActionUI() {
-            const payCurrencyBtn = document.getElementById('payCurrency');
-            const receiveCurrencyBtn = document.getElementById('receiveCurrency');
-
-            if (action === 'buy') {
-                payCurrencyBtn.querySelector('img').src = "/images/brl.png";
-                payCurrencyBtn.querySelector('span').innerText = "BRL";
-                receiveCurrencyBtn.querySelector('img').src = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png";
-                receiveCurrencyBtn.querySelector('span').innerText = "BTC";
-                payAmount.placeholder = "0.00";
-                receiveAmount.placeholder = "0.00000000";
-                walletGroup.classList.remove('hidden');
-                sellInfo.classList.add('hidden');
-                document.getElementById('paymentMethodsSection').classList.remove('hidden');
-                paymentMethods.forEach(b => b.classList.remove('selected'));
-                selectedMethod = null;
-            } else {
-                payCurrencyBtn.querySelector('img').src = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png";
-                payCurrencyBtn.querySelector('span').innerText = "BTC";
-                receiveCurrencyBtn.querySelector('img').src = "/images/brl.png";
-                receiveCurrencyBtn.querySelector('span').innerText = "BRL";
-                payAmount.placeholder = "0.00000000";
-                receiveAmount.placeholder = "0.00";
-                walletGroup.classList.add('hidden');
-                sellInfo.classList.remove('hidden');
-                document.getElementById('paymentMethodsSection').classList.add('hidden');
-                selectedMethod = 'pix';
-            }
-        }
-
-        applyActionUI();
-    
-        // CATEGORIZADAS AGORA
-        const fiatCurrencies = [
-            { code: "BRL", name: "Real Brasileiro", icon: "/images/brl.png" },
-            { code: "USD", name: "Dólar Americano", icon: "/images/usd.png" },
-            { code: "EUR", name: "Euro", icon: "/images/eur.png" }
-        ];
-    
-        const cryptoCurrencies = [
-            { code: "BTC", name: "Bitcoin", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/btc.png" },
-            { code: "ETH", name: "Ethereum", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/eth.png" },
-            { code: "USDT", name: "Tether", icon: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/32/color/usdt.png" }
-        ];
-    
-        function createCurrencyDropdown(containerId, buttonId, type) {
-            const dropdown = document.getElementById(containerId);
-            const button = document.getElementById(buttonId);
-    
-            const currencies = type === 'pay' ? fiatCurrencies : cryptoCurrencies;
-    
-            button.addEventListener('click', () => {
-                dropdown.classList.toggle('hidden');
-            });
-    
-            currencies.forEach(currency => {
-                const option = document.createElement('div');
-                option.className = 'dropdown-option';
-                option.innerHTML = `
-                    <img src="${currency.icon}" width="20" />
-                    <span>${currency.code}</span>
-                `;
-                option.addEventListener('click', () => {
-                    button.querySelector('img').src = currency.icon;
-                    button.querySelector('span').innerText = currency.code;
-                    dropdown.classList.add('hidden');
-                    console.log(`Selected ${type}: ${currency.code}`);
-                });
-                dropdown.appendChild(option);
-            });
-        }
-    
-        createCurrencyDropdown('payDropdown', 'payCurrency', 'pay');
-        createCurrencyDropdown('receiveDropdown', 'receiveCurrency', 'receive');
-
-        // Countdown 15 min ao clicar em Confirm Payment
-        confirmBtn.addEventListener('click', () => {
-            // evita múltiplos timers
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            const endTime = Date.now() + 15 * 60 * 1000;
-            countdownBlock.classList.remove('hidden');
-            paymentSummary.classList.add('hidden');
-            sellDepositBlock.classList.add('hidden');
-            qrCodeImg.classList.add('hidden');
-            confirmBtn.classList.add('hidden');
-            statusMessage.textContent = 'Aguardando confirmação na nossa carteira...';
-
-            const updateCountdown = () => {
-                const remaining = endTime - Date.now();
-                if (remaining <= 0) {
-                    cdMinutes.textContent = '00';
-                    cdSeconds.textContent = '00';
-                    cdCentis.textContent = '00';
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                    return;
-                }
-                const totalMs = remaining;
-                const totalSec = Math.floor(totalMs / 1000);
-                const minutes = String(Math.floor(totalSec / 60)).padStart(2, '0');
-                const seconds = String(totalSec % 60).padStart(2, '0');
-                const centis = String(Math.floor((totalMs % 1000) / 10)).padStart(2, '0');
-                cdMinutes.textContent = minutes;
-                cdSeconds.textContent = seconds;
-                cdCentis.textContent = centis;
-            };
-
-            updateCountdown();
-            countdownInterval = setInterval(updateCountdown, 100);
-        });
-
-        // Partículas flutuantes (versão imagem)
-        function initParticles() {
-            const container = document.getElementById('particles-container');
-            if (!container) return;
-            const count = 25;
-            for (let i = 0; i < count; i++) {
-                const el = document.createElement('img');
-                el.className = 'particle';
-                el.src = 'https://caelum-online-public.s3.amazonaws.com/assets-imersaodev/Convers%C3%A3o+1.png';
-                const size = 25 + Math.random() * 15; // 25–40px
-                const duration = 8 + Math.random() * 12;
-                const delay = Math.random() * 5;
-                const x = (Math.random() * 100).toFixed(2) + 'vw';
-                const xOffset = (Math.random() * 40 - 20).toFixed(2) + 'px';
-                el.style.left = x;
-                el.style.setProperty('--x-offset', xOffset);
-                el.style.width = `${size}px`;
-                el.style.height = `${size}px`;
-                el.style.animationDuration = `${duration}s`;
-                el.style.animationDelay = `${delay}s`;
-                container.appendChild(el);
-            }
-        }
-
-        initParticles();
-    });
-    </script>
-    
 
 
 </body>
