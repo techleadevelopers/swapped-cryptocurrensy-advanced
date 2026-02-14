@@ -1,5 +1,5 @@
 
-<img src="https://res.cloudinary.com/limpeja/image/upload/v1770993671/swap_1_mvctri.png" alt="swap Logo" width="280">
+<div align="center"><img src="https://res.cloudinary.com/limpeja/image/upload/v1770993671/swap_1_mvctri.png" alt="swap Logo" width="280"></div>
 
 ## Swap buy and sell instans Cripto or Pix ↔ BRL com UX Instantânea
 ## Visão Executiva
