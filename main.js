@@ -423,21 +423,94 @@ const updateStep = (step) => {
 // --- DOMContentLoaded Listener (combining setup and initial logic) ---
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const API_BASE = 'https://swappy-financial-backend-cripto-production.up.railway.app';
+  let buySse = null;
+  let currentBuyId = null;
+
   // Get DOM element references
   const continueBtn = document.getElementById('continueBtn');
+  const createOrderBtn = document.getElementById('createOrderBtn');
   const payAmountInput = document.getElementById('payAmount');
   const receiveAmountInput = document.getElementById('receiveAmount');
   const rateText = document.querySelector('.rate-text');
   const paymentMethodButtons = document.querySelectorAll('.payment-method');
-  const walletAddressInput = document.getElementById('walletAddress'); // Assume wallet input exists
-  // Note: paymentInfoSection elements are now assumed to be inside step 4 content
+  const walletAddressInput = document.getElementById('walletAddress'); // destino on-chain
+  const orderStatusEl = document.getElementById('orderStatus');
+  const orderIdEl = document.getElementById('orderId');
+  const depositAddressEl = document.getElementById('depositAddress');
+  const orderErrorEl = document.getElementById('orderError');
+  const pixCpfInput = document.getElementById('pixCpf');
+  const pixPhoneInput = document.getElementById('pixPhone');
+  const pixKeyDisplay = document.getElementById('pixKey');
+  const qrCodeImg = document.getElementById('qrCodeImg');
+  const statusMessage = document.getElementById('statusMessage');
 
+  function setOrderError(msg) {
+    if (!orderErrorEl) return;
+    if (msg) {
+      orderErrorEl.textContent = msg;
+      orderErrorEl.style.display = 'block';
+    } else {
+      orderErrorEl.textContent = '';
+      orderErrorEl.style.display = 'none';
+    }
+  }
+
+  function startBuyStream(buyId) {
+    if (buySse) buySse.close();
+    try {
+      buySse = new EventSource(`${API_BASE}/api/buy/${buyId}/stream`);
+      buySse.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (orderStatusEl) orderStatusEl.textContent = data.status || '—';
+          if (statusMessage) statusMessage.textContent = `Status: ${data.status || '—'}`;
+        } catch (e) { /* ignore */ }
+      };
+      buySse.onerror = () => buySse && buySse.close();
+    } catch (e) {
+      console.warn('SSE buy error', e);
+    }
+  }
+
+  async function createBuyOrder() {
+    setOrderError('');
+    const amount = parseFloat(payAmountInput?.value || '0');
+    const destAddr = walletAddressInput?.value?.trim();
+    const phone = pixPhoneInput?.value?.replace(/\D/g, '') || '';
+    const cpf = pixCpfInput?.value?.replace(/\D/g, '') || '';
+    if (!amount || amount <= 0) return setOrderError('Informe um valor válido.');
+    if (!destAddr) return setOrderError('Informe o endereço TRON de destino.');
+    try {
+      const resp = await fetch(`${API_BASE}/api/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountBRL: amount, asset: 'USDT', address: destAddr, pixPhone: phone, pixCpf: cpf })
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        const msg = data.error || (resp.status === 429 ? 'Limite diário atingido.' : 'Erro ao criar compra');
+        return setOrderError(msg);
+      }
+      const data = await resp.json();
+      currentBuyId = data.buyId;
+      if (orderIdEl) orderIdEl.textContent = data.buyId || '—';
+      if (orderStatusEl) orderStatusEl.textContent = data.status || 'aguardando_pix';
+      if (pixKeyDisplay) pixKeyDisplay.textContent = data.pixKey || 'chavepix@nexswap.com';
+      if (qrCodeImg && data.qrCodeUrl) qrCodeImg.src = data.qrCodeUrl;
+      if (statusMessage) statusMessage.textContent = 'Pague o PIX para liberar o envio.';
+      startBuyStream(currentBuyId);
+    } catch (err) {
+      console.error(err);
+      setOrderError('Falha de rede ao criar compra.');
+    }
+  }
 
   // --- Initial Setup ---
 
   // Fetch BTC price and update the rate text and state
   try {
-      const res = await fetch("http://localhost:3000/api/price");
+      const res = await fetch(`${API_BASE}/api/price`);
       if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -534,7 +607,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               case 4: // Confirmation and Processing Step
                   // This is where the transaction process is initiated.
                   // processTransaction includes showing modals and verification.
-                  await processTransaction();
+                  if (state.action === 'buy') {
+                      await createBuyOrder();
+                  } else {
+                      await processTransaction();
+                  }
 
                   // After processTransaction finishes (either succeeds, fails, or times out),
                   // we reset the state and UI back to step 1.
