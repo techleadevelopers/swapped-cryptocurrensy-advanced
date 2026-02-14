@@ -1,5 +1,7 @@
-# Swappy financial — On/Off-Ramp Cripto ↔ BRL com UX Instantânea
 
+<img src="https://res.cloudinary.com/limpeja/image/upload/v1770993671/swap_1_mvctri.png" alt="swap Logo" width="280">
+
+## Swap buy and sell instans Cripto or Pix ↔ BRL com UX Instantânea
 ## Visão Executiva
 Swappy financial é uma stack de on/off-ramp focada em “Sell” (usuário envia cripto, recebe PIX). Mantemos um backend enxuto (Express) endurecido e preparado para evoluir com workers e filas: API pública para criação/consulta de ordens, worker on-chain para detectar depósitos e worker PIX para liquidar payouts. Tudo validado com schema de ambiente, limites configuráveis e cache de preço.
 
