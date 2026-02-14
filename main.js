@@ -25,7 +25,7 @@ const LIQUIDITY_POOLS = { // Simulated liquidity
 
 const steps = { // Step definitions
   1: 'Valor', // Amount in Portuguese
-  2: 'Carteira', // Wallet
+  2: 'Carteira + Pagamento', // Wallet
   3: 'Método de Pagamento', // Payment Method
   4: 'Confirmar' // Confirm
 };
@@ -33,12 +33,13 @@ const steps = { // Step definitions
 // Helper functions (mostly from second block)
 
 const validateWalletAddress = (address) => {
-  // Basic validation - adapt as needed for actual BTC addresses
-  // BTC addresses typically start with 1, 3, or bc1 and have variable lengths.
-  // This check seems more suitable for Ethereum (starts with 0x, 42 chars)
-  // Let's keep the original simple check or replace with a more suitable one if needed.
-  // For a real app, use a library for address validation.
-   return address.length > 20; // Simple check: just needs some characters
+  // Permite TRON (T...), ETH (0x...) e BTC (1/3/bc1) com checagem leve só para UX.
+  if (!address) return false;
+  const a = address.trim();
+  if (a.startsWith('T') && a.length >= 30) return true;           // TRON base58 típica ~34
+  if (a.startsWith('0x') && a.length === 42) return true;         // ETH/evm
+  if ((a.startsWith('1') || a.startsWith('3') || a.startsWith('bc1')) && a.length >= 26) return true; // BTC simples
+  return a.length >= 10; // fallback permissivo para não travar o fluxo
 };
 
 const calculateFees = (amount) => amount * state.transactionFee;
@@ -47,7 +48,8 @@ const connectWallet = async () => {
   // Simulate wallet connection
   await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async operation
   state.connected = true;
-  state.walletAddress = 'bc1' + Math.random().toString(36).slice(2, 18); // Simulate a simple BTC-like address
+  // Simula um endereço TRON válido (~34 chars) para não travar a validação
+  state.walletAddress = 'T' + Math.random().toString(36).slice(2, 34);
   return state.walletAddress;
 };
 
@@ -278,6 +280,39 @@ const showSuccessNotification = (tx) => {
   setTimeout(() => div.remove(), 8000); // Show for 8 seconds
 };
 
+// Hero animations (premium title typing)
+function initHeroAnimations() {
+  if (typeof anime === 'undefined') return;
+
+  const premiumTitle = document.getElementById('premiumTitle');
+  if (premiumTitle) {
+      const titleContent = premiumTitle.textContent.trim();
+      premiumTitle.textContent = ''; // Clear to start typing
+
+      const typeAnim = anime({
+          targets: { value: 0 },
+          value: titleContent.length,
+          duration: 2000, // typing speed
+          delay: 1000,    // start after a short pause
+          endDelay: 3000, // rest 3s before repeating
+          loop: true,
+          easing: 'linear',
+          begin: function() {
+              premiumTitle.classList.remove('typing-finished');
+              premiumTitle.textContent = '';
+          },
+          update: function(anim) {
+              const charIndex = Math.floor(anim.animatables[0].target.value);
+              premiumTitle.textContent = titleContent.substring(0, charIndex);
+          },
+          loopComplete: function() {
+              premiumTitle.classList.add('typing-finished');
+          }
+      });
+
+  }
+}
+
 const processTransaction = async () => {
   // This function is called when 'Continue' is clicked on Step 4
   const loadingSpinner = document.querySelector('.loading-spinner'); // Assume spinner exists
@@ -384,7 +419,7 @@ const updateStep = (step) => {
       if (step === 4) {
           continueBtn.innerText = 'Processar Pagamento'; // Portuguese
       } else {
-          continueBtn.innerText = 'Continuar'; // Portuguese
+          continueBtn.innerText = 'Buy Now'; // Portuguese
       }
   }
 
@@ -426,13 +461,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const API_BASE = 'https://swappy-financial-backend-cripto-production.up.railway.app';
   let buySse = null;
   let currentBuyId = null;
+  const PARTICLE_ICON = 'https://res.cloudinary.com/limpeja/image/upload/v1771076927/iconnn-Photoroom_wdsmis.png';
 
   // Get DOM element references
   const continueBtn = document.getElementById('continueBtn');
-  const createOrderBtn = document.getElementById('createOrderBtn');
+  
+  const orderInfoBox = document.getElementById('orderInfoBox');
   const payAmountInput = document.getElementById('payAmount');
   const receiveAmountInput = document.getElementById('receiveAmount');
   const rateText = document.querySelector('.rate-text');
+  const rateSpinner = document.querySelector('.loading-spinner');
   const paymentMethodButtons = document.querySelectorAll('.payment-method');
   const walletAddressInput = document.getElementById('walletAddress'); // destino on-chain
   const orderStatusEl = document.getElementById('orderStatus');
@@ -444,6 +482,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pixKeyDisplay = document.getElementById('pixKey');
   const qrCodeImg = document.getElementById('qrCodeImg');
   const statusMessage = document.getElementById('statusMessage');
+  const particlesContainer = document.getElementById('particles-container');
+  const premiumTitleEl = document.getElementById('premiumTitle');
+
+  // Apply blur/shake animation to hero title text
+  if (premiumTitleEl) {
+    premiumTitleEl.classList.add('blur-shake');
+  }
+
+  /* Re-enable floating icon glow effect
+  if (particlesContainer) {
+    particlesContainer.innerHTML = ''; // reset if rerun
+    const spawnParticles = (count = 18) => {
+      for (let i = 0; i < count; i++) {
+        const img = document.createElement('img');
+        img.src = PARTICLE_ICON;
+        img.className = 'particle';
+        const left = Math.random() * 100;
+        const xOffset = (Math.random() * 60 - 30).toFixed(1); // -30vw to +30vw drift
+        const duration = (14 + Math.random() * 10).toFixed(1); // 14s – 24s
+        const delay = (-Math.random() * duration).toFixed(1); // negative delays to desync
+        const scale = (0.6 + Math.random() * 0.8).toFixed(2); // 0.6x – 1.4x size variance
+        img.style.left = `${left}%`;
+        img.style.setProperty('--x-offset', `${xOffset}vw`);
+        img.style.animationDuration = `${duration}s`;
+        img.style.animationDelay = `${delay}s`;
+        img.style.transform = `scale(${scale})`;
+        particlesContainer.appendChild(img);
+      }
+    };
+    spawnParticles();
+  }
+  */
 
   function setOrderError(msg) {
     if (!orderErrorEl) return;
@@ -508,22 +578,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Initial Setup ---
 
+  async function fetchPriceWithFallback() {
+    try {
+      const res = await fetch(`${API_BASE}/api/price`);
+      if (!res.ok) throw new Error(`backend ${res.status}`);
+      const data = await res.json();
+      return data?.brl;
+    } catch (e) {
+      // fallback para CoinGecko se backend falhar
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl');
+        const data = await res.json();
+        return data?.bitcoin?.brl;
+      } catch {
+        throw e; // mantém o primeiro erro
+      }
+    }
+  }
+
   // Fetch BTC price and update the rate text and state
   try {
-      const res = await fetch(`${API_BASE}/api/price`);
-      if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      const data = await res.json();
-      state.exchangeRate = data.brl; // Update state
-      LIQUIDITY_POOLS.BTC.price = data.brl; // Also update liquidity pool price
-      rateText.textContent = `1 BTC ≈ ${state.exchangeRate.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
-      console.log("BTC Rate fetched:", state.exchangeRate);
+    const price = await fetchPriceWithFallback();
+    if (!price) throw new Error('sem preço');
+    state.exchangeRate = price;
+    LIQUIDITY_POOLS.BTC.price = price;
+    rateText.textContent = `1 BTC ≈ ${price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    console.log("BTC Rate fetched:", state.exchangeRate);
+    if (rateSpinner) rateSpinner.classList.add('hidden');
   } catch (err) {
-      console.error("Erro ao buscar o preço do BTC:", err);
-      rateText.textContent = "Erro ao buscar a taxa 😓";
-      state.exchangeRate = 0; // Indicate error state
-      LIQUIDITY_POOLS.BTC.price = 0;
+    console.error("Erro ao buscar o preço do BTC:", err);
+    rateText.textContent = "Erro ao buscar a taxa 😓";
+    state.exchangeRate = 0;
+    LIQUIDITY_POOLS.BTC.price = 0;
+    if (rateSpinner) rateSpinner.classList.add('hidden');
   }
 
   // Set initial step and update UI
@@ -668,3 +755,124 @@ document.addEventListener('DOMContentLoaded', async () => {
 // This logic is already integrated into the paymentMethodButtons click listener above,
 // but you could keep a separate function if you call it from elsewhere.
 // The integrated code adds/removes the 'selected' class and resets border style.
+
+// ---------- Animated blue shader background ----------
+(function initBlueShaderBackground() {
+  const canvas = document.getElementById('canvas') || document.getElementById('bgShader');
+  if (!canvas) return;
+
+  const externalSource = document.getElementById('blueShaderSource');
+
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
+  if (!gl) {
+    canvas.style.display = 'none';
+    return;
+  }
+
+  const vertexSrc = `#version 300 es
+  in vec2 position;
+  void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+
+  const fragmentSrc = externalSource ? externalSource.textContent : `#version 300 es
+  precision highp float;
+  out vec4 fragColor;
+  uniform float uTime;
+  uniform vec2 uResolution;
+
+  vec3 palette(float t) {
+    vec3 a = vec3(0.02, 0.10, 0.22);
+    vec3 b = vec3(0.05, 0.30, 0.65);
+    vec3 c = vec3(0.02, 0.55, 1.00);
+    vec3 d = vec3(0.00, 0.25, 0.40);
+    return a + b * cos(6.2831 * (c * t + d));
+  }
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / uResolution;
+    vec2 p = uv * 2.0 - 1.0;
+    p.x *= uResolution.x / uResolution.y;
+
+    float t = uTime * 0.15;
+
+    float wave1 = sin(p.x * 3.5 + t) + cos(p.y * 3.0 - t * 1.3);
+    float wave2 = sin(length(p) * 4.0 - t * 2.0);
+    float mask = smoothstep(-1.0, 1.0, 0.6 * wave1 + 0.4 * wave2);
+
+    vec3 col = palette(mask + 0.25 * sin(t + p.y * 2.0));
+
+    float vignette = smoothstep(1.2, 0.4, length(p));
+    col *= vignette;
+
+    fragColor = vec4(col, 0.42);
+  }`;
+
+  const compile = (type, source) => {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(shader));
+      return null;
+    }
+    return shader;
+  };
+
+  const vs = compile(gl.VERTEX_SHADER, vertexSrc);
+  const fs = compile(gl.FRAGMENT_SHADER, fragmentSrc);
+  if (!vs || !fs) return;
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return;
+  }
+
+  const positionLoc = gl.getAttribLocation(program, 'position');
+  const timeLoc = gl.getUniformLocation(program, 'uTime');
+  const resLoc = gl.getUniformLocation(program, 'uResolution');
+
+  const vertices = new Float32Array([
+    -1, -1,
+     1, -1,
+    -1,  1,
+     1,  1,
+  ]);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  gl.enableVertexAttribArray(positionLoc);
+  gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+  gl.clearColor(0, 0, 0, 0);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  const resize = () => {
+    const dpr = Math.max(1, window.devicePixelRatio);
+    const width = Math.floor(window.innerWidth * dpr);
+    const height = Math.floor(window.innerHeight * dpr);
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    gl.viewport(0, 0, width, height);
+  };
+
+  const render = (now) => {
+    gl.useProgram(program);
+    gl.uniform1f(timeLoc, now * 0.001);
+    gl.uniform2f(resLoc, canvas.width, canvas.height);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  };
+
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(render);
+})();
+
