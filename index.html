@@ -293,12 +293,118 @@
                 <div id="statusMessage"></div>
                 <button class="confirm-payment-btn" id="confirmPaymentBtn">Confirm Payment</button>
             </div>
+
+            <div class="payment-info" id="orderInfoBox" style="margin-top:20px;">
+                <h3>Ordem TRON/USDT</h3>
+                <p class="payment-summary-text">
+                    <strong>Endereço TRON:</strong><br>
+                    <code id="depositAddress">—</code><br>
+                    <strong>Status:</strong> <span id="orderStatus">—</span><br>
+                    <strong>Ordem:</strong> <span id="orderId">—</span>
+                </p>
+                <p class="payment-summary-text" id="orderNotice">Rede TRON / USDT (TRC20). Envie também 5–10 TRX para fee do sweep.</p>
+                <p class="payment-summary-text" id="orderError" style="color:#c0392b; display:none;"></p>
+                <button class="confirm-payment-btn" id="createOrderBtn" type="button">Criar ordem TRON/USDT</button>
+            </div>
             
             
    <!-- ... (todo o conteúdo anterior do seu HTML permanece igual) ... -->
 
    <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Integração real TRON/USDT
+        const API_BASE = 'https://swappy-financial-backend-cripto-production.up.railway.app';
+        const createOrderBtn = document.getElementById('createOrderBtn');
+        const depositAddressEl = document.getElementById('depositAddress');
+        const orderStatusEl = document.getElementById('orderStatus');
+        const orderIdEl = document.getElementById('orderId');
+        const orderErrorEl = document.getElementById('orderError');
+        const payAmountInput = document.getElementById('payAmount');
+        const pixPhoneInput = document.getElementById('pixPhone');
+        const pixCpfInput = document.getElementById('pixCpf');
+
+        let eventSource = null;
+
+        function setOrderStatus(text) {
+            if (orderStatusEl) orderStatusEl.textContent = text || '—';
+        }
+        function setOrderError(msg) {
+            if (!orderErrorEl) return;
+            if (msg) {
+                orderErrorEl.textContent = msg;
+                orderErrorEl.style.display = 'block';
+            } else {
+                orderErrorEl.textContent = '';
+                orderErrorEl.style.display = 'none';
+            }
+        }
+        function startStream(orderId) {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            try {
+                eventSource = new EventSource(`${API_BASE}/api/order/${orderId}/stream`);
+                eventSource.onmessage = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.data);
+                        setOrderStatus(data.status || '—');
+                    } catch (e) {
+                        console.warn('SSE parse', e);
+                    }
+                };
+                eventSource.onerror = () => {
+                    eventSource?.close();
+                };
+            } catch (e) {
+                console.warn('SSE error', e);
+            }
+        }
+
+        async function createOrder() {
+            setOrderError('');
+            const amount = parseFloat(payAmountInput?.value || '0');
+            const phone = pixPhoneInput?.value?.replace(/\D/g, '') || '';
+            const cpf = pixCpfInput?.value?.replace(/\D/g, '') || '';
+            if (!amount || amount <= 0) {
+                setOrderError('Informe um valor válido em BRL.');
+                return;
+            }
+            if (!phone) {
+                setOrderError('Informe a chave PIX (telefone).');
+                return;
+            }
+            try {
+                const resp = await fetch(`${API_BASE}/api/order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amountBRL: amount,
+                        pixPhone: phone,
+                        pixCpf: cpf
+                    })
+                });
+                if (!resp.ok) {
+                    const data = await resp.json().catch(() => ({}));
+                    const msg = data?.error || (resp.status === 429 ? 'Limite diário por chave PIX atingido.' : 'Erro ao criar ordem');
+                    setOrderError(msg);
+                    return;
+                }
+                const data = await resp.json();
+                if (depositAddressEl) depositAddressEl.textContent = data.depositAddress || '—';
+                if (orderIdEl) orderIdEl.textContent = data.orderId || '—';
+                setOrderStatus(data.status || 'aguardando_deposito');
+                if (data.orderId) startStream(data.orderId);
+            } catch (err) {
+                console.error(err);
+                setOrderError('Falha de rede ao criar ordem.');
+            }
+        }
+
+        if (createOrderBtn) {
+            createOrderBtn.addEventListener('click', createOrder);
+        }
+
         const continueBtn = document.getElementById('continueBtn');
         const step2 = document.getElementById('step2');
         const inputSection = document.getElementById('inputSection');
